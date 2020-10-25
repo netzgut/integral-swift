@@ -9,6 +9,12 @@ extension Registry: RegistryStartup {
             print("Resolving")
             return TestService()
         }.lazy()
+
+        register(EagerTestService.self) {
+            print("Resolving")
+            return EagerTestService()
+        }.eager()
+
     }
 }
 
@@ -18,7 +24,13 @@ class TestService {
     }
 }
 
-final class RegsitryTests: XCTestCase {
+class EagerTestService {
+    func testValue() -> String {
+        "test"
+    }
+}
+
+final class RegistryTests: XCTestCase {
 
     class TestData {
 
