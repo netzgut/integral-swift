@@ -169,7 +169,7 @@ public final class Registry {
         Registry.standard.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
             .sorted { $0.name < $1.name }
-            .forEach { print("  \($0.status)") }
+            .forEach { print("  \($0.name) : \($0.statusDescription)") }
     }
 
 }

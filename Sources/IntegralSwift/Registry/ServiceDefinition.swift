@@ -24,7 +24,7 @@ protocol ServiceBaseDefinition {
     var realizationType: ServiceRealizationType { get }
     var isRealized: Bool { get }
 
-    var status: String { get }
+    var statusDescription: String { get }
 
     func realize()
 
@@ -32,9 +32,9 @@ protocol ServiceBaseDefinition {
 
 extension ServiceDefinition {
 
-    var status: String {
-        let state =  self.isRealized ? "REALIZED" : "unrealized"
-        return "\(self.name) (\(self.realizationType)) : \(state)"
+    var statusDescription: String {
+        let state =  self.isRealized ? "REALIZED" : "DEFINED"
+        return "\(state) (\(self.realizationType))"
     }
 }
 
