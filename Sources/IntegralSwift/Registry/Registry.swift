@@ -19,7 +19,7 @@ public protocol RegistryStartup {
 
 public final class Registry {
 
-    public static var standard = Registry()
+    private static var standard = Registry()
 
     private let registrationQueue = DispatchQueue(label: "integral-registry.registrationQueue",
                                                   attributes: .concurrent)
@@ -35,6 +35,8 @@ public final class Registry {
             }
         }
     }
+
+    var printServicesOnStartup: Bool = true
 
     private func register<S>(_ type: S.Type = S.self,
                              factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
@@ -108,6 +110,10 @@ public final class Registry {
         type(of: registryStartup).registryStartup()
 
         Registry.registerServices = nil
+
+        if Registry.standard.printServicesOnStartup {
+            printServices()
+        }
     }
 
     private var resolveMutex = pthread_mutex_t()
@@ -148,5 +154,15 @@ public final class Registry {
     private func buildIdentitier<S>(_ type: S.Type) -> Int {
         ObjectIdentifier(type).hashValue
     }
+
+    public static func printServices() {
+        print("📖 REGISTERED SERVICES:")
+
+        Registry.standard.serviceDefinitions.values
+            .map { $0 as! ServiceBaseDefinition}
+            .sorted { $0.name < $1.name }
+            .forEach { print("  \($0.status)") }
+    }
+
 
 }

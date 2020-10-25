@@ -13,14 +13,35 @@ import Foundation
 
 public typealias ServiceProxy<S> = () -> S
 
-public class ServiceDefinition<S> {
+protocol ServiceBaseDefinition {
+    var name: String { get }
+    var isLazy: Bool { get }
+    var isRealized: Bool { get }
+
+    var status: String { get }
+}
+
+extension ServiceDefinition {
+
+    var status: String {
+        let lazy = self.isLazy ? " (lazy)" : ""
+        let state =  self.isRealized ? "REALIZED" : "unrealized"
+        return "\(self.name)\(lazy) : \(state)"
+    }
+}
+
+public class ServiceDefinition<S>: ServiceBaseDefinition {
 
     var type: S.Type
     var name: String
 
     private var factory: ServiceFactory<S>
-    private var isLazy: Bool = false
+    internal var isLazy: Bool = false
     private var realizedService: S?
+
+    var isRealized: Bool {
+        self.realizedService != nil
+    }
 
     public init(type: S.Type = S.self,
                 factory: @escaping ServiceFactory<S>) {
