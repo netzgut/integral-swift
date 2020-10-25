@@ -13,14 +13,14 @@ import Foundation
 
 @propertyWrapper
 public struct Inject<S> {
-
+    
     private var service: S?
     private var proxy: ServiceProxy<S>
-
+    
     public init() {
         self.proxy = Registry.proxy(S.self)
     }
-
+    
     public var wrappedValue: S {
         mutating get {
             if let service = self.service {
