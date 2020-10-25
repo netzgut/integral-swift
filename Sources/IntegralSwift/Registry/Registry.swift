@@ -37,12 +37,37 @@ public final class Registry {
     }
 
     private func register<S>(_ type: S.Type = S.self,
-                                   factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+                             factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
 
-        let definition = ServiceDefinition(identifier: buildIdentitier(type),
+        let identifier = buildIdentitier(type)
+
+        if let alreadyRegistered = self.serviceDefinitions[identifier] as? ServiceDefinition<S> {
+            let name = String(reflecting: type)
+            print("⚠️ WARNING: Service '\(alreadyRegistered.name)' is already registered and will be overriden by '\(name)'. Use 'Registry.override(...)' to silence this warning.")
+        }
+
+        let definition = ServiceDefinition(type: type,
                                            factory: factory)
 
-        self.serviceDefinitions[definition.identifier] = definition
+        self.serviceDefinitions[identifier] = definition
+
+        return definition
+    }
+
+    private func override<S>(_ type: S.Type = S.self,
+                             factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+
+        let identifier = buildIdentitier(type)
+
+        if self.serviceDefinitions[identifier] != nil {
+            let name = String(reflecting: type)
+            print("⚠️ WARNING: No service registred for '\(name)'. Use 'Registry.register(...)' instead.")
+        }
+
+        let definition = ServiceDefinition(type: type,
+                                           factory: factory)
+
+        self.serviceDefinitions[identifier] = definition
 
         return definition
     }
@@ -51,6 +76,12 @@ public final class Registry {
     public static func register<S>(_ type: S.Type = S.self,
                                    factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
         self.standard.register(type, factory: factory)
+    }
+
+    @discardableResult
+    public static func override<S>(_ type: S.Type = S.self,
+                                   factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+        self.standard.override(type, factory: factory)
     }
 
     private static var registrationMutex: pthread_mutex_t = {
@@ -114,7 +145,7 @@ public final class Registry {
         return service
     }
 
-    private func buildIdentitier<S>(_ type: S.Type = S.self) -> Int {
+    private func buildIdentitier<S>(_ type: S.Type) -> Int {
         ObjectIdentifier(type).hashValue
     }
 

@@ -15,16 +15,17 @@ public typealias ServiceProxy<S> = () -> S
 
 public class ServiceDefinition<S> {
 
-    var identifier: Int
+    var type: S.Type
+    var name: String
 
     private var factory: ServiceFactory<S>
     private var isLazy: Bool = false
     private var realizedService: S?
 
-    public init(_ type: S.Type = S.self,
-                identifier: Int,
+    public init(type: S.Type = S.self,
                 factory: @escaping ServiceFactory<S>) {
-        self.identifier = identifier
+        self.type = type
+        self.name = String(reflecting: type)
         self.factory = factory
     }
 
