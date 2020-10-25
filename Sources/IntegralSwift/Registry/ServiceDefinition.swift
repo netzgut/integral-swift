@@ -11,7 +11,7 @@
 
 import Foundation
 
-public typealias ServiceProxy<S> = () -> S
+typealias ServiceProxy<S> = () -> S
 
 protocol ServiceBaseDefinition {
     var name: String { get }
@@ -50,7 +50,7 @@ public class ServiceDefinition<S>: ServiceBaseDefinition {
         self.factory = factory
     }
 
-    public final func proxy() -> ServiceProxy<S> {
+    internal func proxy() -> ServiceProxy<S> {
         if let service = self.realizedService {
             return { service }
         }

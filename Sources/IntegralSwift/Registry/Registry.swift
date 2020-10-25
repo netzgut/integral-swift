@@ -122,7 +122,7 @@ public final class Registry {
         pthread_mutex_init(&self.resolveMutex, nil)
     }
 
-    public final func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S>? {
+    private func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S>? {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
@@ -134,7 +134,7 @@ public final class Registry {
         return definition.proxy()
     }
 
-    public static func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
+    internal static func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
         Registry.registerServices?()
 
         guard let proxy = Registry.standard.proxy(type) else {
