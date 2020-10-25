@@ -10,7 +10,9 @@ This is still WIP!
 
 A smaller version of [hmlongco/Resolver](https://github.com/hmlongco/Resolver).
 
-Only supports singletons, lazy or eager loaded.
+Only supports singletons as scope.
+
+Services can loaded on injection (default), lazy or eager (on registry startup).
 
 ### Symbols
 
@@ -19,7 +21,6 @@ Injects key-based objects, e.g. configuration symbols.
 ### UserDefaults
 
 Easy access to `UserDefault.standard`
-
 
 
 ## Licence
