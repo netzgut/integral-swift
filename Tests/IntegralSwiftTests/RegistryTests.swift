@@ -1,9 +1,9 @@
 import XCTest
 @testable import IntegralSwift
 
-extension Registry: RegistryStartup {
+extension Registry: RegistryRegistrations {
 
-    public static func registryStartup() {
+    public static func registrations() {
 
         register(TestService.self) {
             print("Resolving")
@@ -45,6 +45,7 @@ final class RegistryTests: XCTestCase {
     func testExample() {
 
         // ARRANGE / ACT
+        Registry.performStartup()
         let testData: TestData = TestData()
 
         print("Before resolving")

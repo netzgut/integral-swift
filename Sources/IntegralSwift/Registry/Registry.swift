@@ -13,8 +13,8 @@ import Foundation
 
 public typealias ServiceFactory<S> = () -> S
 
-public protocol RegistryStartup {
-    static func registryStartup()
+public protocol RegistryRegistrations {
+    static func registrations()
 }
 
 public final class Registry {
@@ -24,7 +24,6 @@ public final class Registry {
     private let registrationQueue = DispatchQueue(label: "integral-registry.registrationQueue",
                                                   attributes: .concurrent)
     private var _serviceDefinitions = [Int: Any]()
-
     private var serviceDefinitions: [Int: Any] {
         get {
             self.registrationQueue.sync { self._serviceDefinitions }
@@ -94,22 +93,22 @@ public final class Registry {
 
     private typealias ServicesRegsitrationFn = () -> Void
 
-    private static var registerServices: ServicesRegsitrationFn? = Registry.registerServicesFn
+    private static var registerServicesOnce: ServicesRegsitrationFn? = Registry.registerServices
 
-    private static var registerServicesFn: ServicesRegsitrationFn = {
+    private static func registerServices() {
         pthread_mutex_lock(&Registry.registrationMutex)
         defer {
             pthread_mutex_unlock(&Registry.registrationMutex)
         }
 
         // Make sure we haven't run registry startup yet
-        guard Registry.registerServices != nil,
-              let registryStartup = (Registry.standard as Any) as? RegistryStartup else {
+        guard Registry.registerServicesOnce != nil,
+              let registrations = (Registry.standard as Any) as? RegistryRegistrations else {
             return
         }
 
         // Startup registry
-        type(of: registryStartup).registryStartup()
+        type(of: registrations).registrations()
 
         // Eager Load services
         Registry.standard.serviceDefinitions.values
@@ -117,11 +116,19 @@ public final class Registry {
             .filter { $0.realizationType == .eager } //
             .forEach { $0.realize() }
 
-        Registry.registerServices = nil
+        Registry.registerServicesOnce = nil
 
         if Registry.standard.printServicesOnStartup {
             printServices()
         }
+    }
+
+    public static func performStartup() {
+        guard let registerFn = Registry.registerServicesOnce else {
+            fatalError("Registry was already started!")
+        }
+
+        registerFn()
     }
 
     private var resolveMutex = pthread_mutex_t()
@@ -143,7 +150,9 @@ public final class Registry {
     }
 
     internal static func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
-        Registry.registerServices?()
+        guard self.registerServicesOnce == nil else {
+            fatalError("Registry MUST be started manually!")
+        }
 
         guard let proxy = Registry.standard.proxy(type) else {
             fatalError("No registration for type \(type) found")
@@ -153,7 +162,6 @@ public final class Registry {
     }
 
     public static func resolve<S>(_ type: S.Type = S.self) -> S {
-
         let proxyFn = Registry.proxy(type)
         let service = proxyFn()
         return service
@@ -165,11 +173,20 @@ public final class Registry {
 
     public static func printServices() {
         print("📖 REGISTERED SERVICES:")
+        guard Registry.standard.serviceDefinitions.isEmpty == false else {
+            print("   No services registered")
+            return
+        }
 
-        Registry.standard.serviceDefinitions.values
+        let definitions = Registry.standard.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
-            .sorted { $0.name < $1.name }
-            .forEach { print("  \($0.name) : \($0.statusDescription)") }
+
+        let maxLength = definitions.map { $0.name.count}.max() ?? 0
+
+        definitions.sorted { $0.name < $1.name }
+            .map { "   \($0.name.padding(toLength: maxLength, withPad: " ", startingAt: 0)) : \($0.statusDescription)" }
+            .forEach { print($0) }
+
     }
 
 }
