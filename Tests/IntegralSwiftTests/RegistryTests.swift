@@ -3,7 +3,7 @@ import XCTest
 
 extension Registry: RegistryRegistrations {
 
-    public static func registrations() {
+    public static func onStartup() {
 
         register(TestService.self) {
             print("Resolving")

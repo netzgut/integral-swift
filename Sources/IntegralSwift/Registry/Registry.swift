@@ -17,7 +17,7 @@ public typealias ServiceFactory<S> = () -> S
 /// Entry-point for the IoC.
 /// All registration should be done in an extension of this protocol.
 public protocol RegistryRegistrations {
-    static func registrations()
+    static func onStartup()
 }
 
 public final class Registry {
@@ -117,7 +117,7 @@ public final class Registry {
         }
 
         // Startup registry
-        type(of: registrations).registrations()
+        type(of: registrations).onStartup()
 
         // Eager Load services
         for rawDefinition in Registry.standard.serviceDefinitions.values {
@@ -188,7 +188,7 @@ public final class Registry {
 
         let definitions = Registry.standard.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
-            .sorted{ $0.name < $1.name }
+            .sorted { $0.name < $1.name }
 
         let maxLength = definitions.map { $0.name.count}.max() ?? 0
 
