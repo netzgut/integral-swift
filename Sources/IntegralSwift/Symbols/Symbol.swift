@@ -32,7 +32,7 @@ public struct Symbol<T> {
             }
 
             guard let definition = Symbols.standard.symbols[self.symbol] else {
-                fatalError("Symbol Defintiion for '\(self.symbol)' is not found!")
+                fatalError("Symbol'\(self.symbol)' not found!")
             }
 
             return definition.resolve()

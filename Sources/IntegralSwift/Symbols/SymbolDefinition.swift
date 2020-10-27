@@ -13,43 +13,45 @@ import Foundation
 
 public typealias SymbolFactory<T> = () -> T
 
-protocol SymbolDefinition {
+internal protocol SymbolDefinition {
     var key: SymbolKey { get }
 
     func resolve<T>() -> T
 }
 
-struct ConstantSymbol: SymbolDefinition {
+internal struct ConstantSymbol: SymbolDefinition {
 
-    var key: SymbolKey
-    var value: Any
+    internal var key: SymbolKey
+    internal var value: Any
 
-    func resolve<T>() -> T {
+    internal func resolve<T>() -> T {
         self.value as! T
     }
 }
 
-struct DynamicSymbol: SymbolDefinition {
-    var key: SymbolKey
-    var factory: SymbolFactory<Any>
+internal struct DynamicSymbol: SymbolDefinition {
 
-    func resolve<T>() -> T {
+    internal var key: SymbolKey
+    internal var factory: SymbolFactory<Any>
+
+    internal func resolve<T>() -> T {
         self.factory() as! T
     }
 }
 
 class LazySymbol: SymbolDefinition {
-    var key: SymbolKey
-    var value: Any?
-    var factory: SymbolFactory<Any>
 
-    init(key: SymbolKey,
+    internal var key: SymbolKey
+    internal var value: Any?
+    internal var factory: SymbolFactory<Any>
+
+    internal init(key: SymbolKey,
          factory: @escaping SymbolFactory<Any>) {
         self.key = key
         self.factory = factory
     }
 
-    func resolve<T>() -> T {
+    internal func resolve<T>() -> T {
         if self.value == nil {
             self.value = self.factory()
         }
