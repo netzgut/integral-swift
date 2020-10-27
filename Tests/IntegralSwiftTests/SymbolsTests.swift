@@ -14,7 +14,7 @@ final class SymbolsTests: XCTestCase {
         var value: String
 
         @Symbol(.executable)
-        var executable: String
+        var executable: String?
     }
 
     func testExample() {

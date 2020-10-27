@@ -33,13 +33,12 @@ public struct SymbolKey: RawRepresentable, Equatable, Hashable, Comparable {
 
 public final class Symbols {
 
+    internal static let standard = Symbols()
+
     private let symbolsQueue = DispatchQueue(label: "integral-symbols.queue",
                                              attributes: .concurrent)
-    private var _symbols = [String: SymbolDefinition]()
-
-    public static let standard = Symbols()
-
-    var symbols: [String: SymbolDefinition] {
+    private var _symbols = [String: Any]()
+    var symbols: [String: Any] {
         get {
             self.symbolsQueue.sync { self._symbols }
         }
@@ -48,6 +47,12 @@ public final class Symbols {
                 self._symbols = newValue
             }
         }
+    }
+
+    private var resolveMutex = pthread_mutex_t()
+
+    public init() {
+        pthread_mutex_init(&self.resolveMutex, nil)
     }
 
     public static func add<T: Any>(_ key: SymbolKey,
@@ -78,11 +83,12 @@ public final class Symbols {
                              factory: factory)
     }
 
-    public func add<T: Any>(_ key: SymbolKey,
-                            type: T.Type = T.self,
-                            factory: @escaping SymbolFactory<T>) {
+    public func add<T>(_ key: SymbolKey,
+                       type: T.Type = T.self,
+                       factory: @escaping SymbolFactory<T>) {
 
         let def = ConstantSymbol(key: key,
+                                 type: type,
                                  value: factory())
 
         self.symbols[key.rawValue] = def
@@ -96,32 +102,57 @@ public final class Symbols {
                                  factory: factory)
     }
 
-    public func dynamic<T: Any>(_ key: SymbolKey,
-                                type: T.Type = T.self,
-                                factory: @escaping SymbolFactory<T>) {
+    public func dynamic<T>(_ key: SymbolKey,
+                           type: T.Type = T.self,
+                           factory: @escaping SymbolFactory<T>) {
 
         let def = DynamicSymbol(key: key,
+                                type: type,
                                 factory: factory)
 
         self.symbols[key.rawValue] = def
     }
 
-    public static func lazy<T: Any>(_ key: SymbolKey,
-                                    type: T.Type = T.self,
-                                    factory: @escaping SymbolFactory<T>) {
+    public static func lazy<T>(_ key: SymbolKey,
+                               type: T.Type = T.self,
+                               factory: @escaping SymbolFactory<T>) {
 
         Symbols.standard.lazy(key,
                               type: type,
                               factory: factory)
     }
 
-    public func lazy<T: Any>(_ key: SymbolKey,
-                             type: T.Type = T.self,
-                             factory: @escaping SymbolFactory<T>) {
+    public func lazy<T>(_ key: SymbolKey,
+                        type: T.Type = T.self,
+                        factory: @escaping SymbolFactory<T>) {
 
         let def = LazySymbol(key: key,
+                             type: type,
                              factory: factory)
 
         self.symbols[key.rawValue] = def
+    }
+
+    private func proxy<T>(_ type: T.Type = T.self,
+                          _ key: String) -> SymbolProxy<T>? {
+        pthread_mutex_lock(&self.resolveMutex)
+        defer { pthread_mutex_unlock(&self.resolveMutex) }
+
+        // TODO: Type check for symbol
+
+        guard let definition = self.symbols[key] as? SymbolDefinition<T> else {
+            return nil
+        }
+
+        return definition.proxy()
+    }
+
+    internal static func proxy<T>(_ type: T.Type = T.self,
+                                  _ key: String) -> SymbolProxy<T> {
+        guard let proxy = Symbols.standard.proxy(type, key) else {
+            fatalError("Symbol '\(key)' not found")
+        }
+
+        return proxy
     }
 }

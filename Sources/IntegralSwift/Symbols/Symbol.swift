@@ -14,7 +14,7 @@ import Foundation
 @propertyWrapper
 public struct Symbol<T> {
 
-    private var symbol: String
+    private var proxy: SymbolProxy<T>
     private var valueOverride: T?
 
     public init(_ symbol: SymbolKey) {
@@ -22,7 +22,7 @@ public struct Symbol<T> {
     }
 
     public init(_ symbol: String) {
-        self.symbol = symbol
+        self.proxy = Symbols.proxy(T.self, symbol)
     }
 
     public var wrappedValue: T {
@@ -31,11 +31,7 @@ public struct Symbol<T> {
                 return value
             }
 
-            guard let definition = Symbols.standard.symbols[self.symbol] else {
-                fatalError("Symbol'\(self.symbol)' not found!")
-            }
-
-            return definition.resolve()
+            return self.proxy()
         }
         set {
             self.valueOverride = newValue

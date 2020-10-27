@@ -12,50 +12,67 @@
 import Foundation
 
 public typealias SymbolFactory<T> = () -> T
+public typealias SymbolProxy<T> = () -> T
 
-internal protocol SymbolDefinition {
-    var key: SymbolKey { get }
-
-    func resolve<T>() -> T
-}
-
-internal struct ConstantSymbol: SymbolDefinition {
-
+internal class SymbolDefinition<T> {
     internal var key: SymbolKey
-    internal var value: Any
-
-    internal func resolve<T>() -> T {
-        self.value as! T
-    }
-}
-
-internal struct DynamicSymbol: SymbolDefinition {
-
-    internal var key: SymbolKey
-    internal var factory: SymbolFactory<Any>
-
-    internal func resolve<T>() -> T {
-        self.factory() as! T
-    }
-}
-
-class LazySymbol: SymbolDefinition {
-
-    internal var key: SymbolKey
-    internal var value: Any?
-    internal var factory: SymbolFactory<Any>
+    internal var type: T.Type
+    internal var factory: SymbolFactory<T>
 
     internal init(key: SymbolKey,
-         factory: @escaping SymbolFactory<Any>) {
+                  type: T.Type,
+                  factory: @escaping SymbolFactory<T>) {
         self.key = key
+        self.type = type
         self.factory = factory
     }
 
-    internal func resolve<T>() -> T {
-        if self.value == nil {
-            self.value = self.factory()
-        }
+    internal func proxy() -> SymbolProxy<T> {
+        fatalError("Must be overriden")
+    }
+}
 
-        return self.value as! T
+internal class ConstantSymbol<T>: SymbolDefinition<T> {
+
+    internal var value: T
+
+    internal init(key: SymbolKey,
+                  type: T.Type = T.self,
+                  value: T) {
+        self.value = value
+
+        super.init(key: key,
+                   type: type,
+                   factory: { value })
+    }
+
+    override internal func proxy() -> SymbolProxy<T> {
+        { self.value }
+    }
+}
+
+internal class DynamicSymbol<T>: SymbolDefinition<T> {
+
+    override internal func proxy() -> SymbolProxy<T> {
+        { self.factory() }
+    }
+}
+
+class LazySymbol<T>: SymbolDefinition<T> {
+
+    internal var value: T?
+
+    override internal func proxy() -> SymbolProxy<T> {
+        let proxy: SymbolProxy<T> = {
+            if let value = self.value {
+                return value
+            }
+
+            let value = self.factory()
+            self.value = value
+
+            return value
+        }
+        return proxy
     }
 }
