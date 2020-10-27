@@ -51,9 +51,9 @@ public final class Registry {
 
         let identifier = buildIdentitier(type)
 
-        if let alreadyRegistered = self.serviceDefinitions[identifier] as? ServiceDefinition<S> {
+        if let alreadyRegistered = self.serviceDefinitions[identifier] as? ServiceBaseDefinition {
             let name = String(reflecting: type)
-            print("⚠️ WARNING: Service '\(alreadyRegistered.name)' is already registered and will be overriden by '\(name)'. Use 'Registry.override(...)' to silence this warning.")
+            print("⚠️ WARNING: Service '\(alreadyRegistered.typeName)' is already registered and will be overriden by '\(name)'. Use 'Registry.override(...)' to silence this warning.")
         }
 
         let definition = ServiceDefinition(type: type,
@@ -139,19 +139,25 @@ public final class Registry {
 
     public static func performStartup() {
         guard let registerFn = Registry.registerServicesOnce else {
-            fatalError("Registry was already started!")
+            fatalError("🚨 ERROR: Registry was already started!")
         }
 
         registerFn()
     }
 
-    private func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S>? {
+    private func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
         let identifier = buildIdentitier(type)
-        guard let definition = self.serviceDefinitions[identifier] as? ServiceDefinition<S> else {
-            return nil
+        guard let definitionAny = self.serviceDefinitions[identifier]  else {
+            fatalError("🚨 ERROR: No registration for type \(type) found")
+        }
+
+        guard let definition = definitionAny as? ServiceDefinition<S> else {
+            let baseDef = definitionAny as! ServiceBaseDefinition
+            let actualTypeName = String(reflecting: type)
+            fatalError("🚨 ERROR: Registration type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
         }
 
         return definition.proxy()
@@ -159,14 +165,10 @@ public final class Registry {
 
     internal static func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
         guard self.registerServicesOnce == nil else {
-            fatalError("Registry MUST be started manually!")
+            fatalError("🚨 ERROR: Registry MUST be started manually!")
         }
 
-        guard let proxy = Registry.standard.proxy(type) else {
-            fatalError("No registration for type \(type) found")
-        }
-
-        return proxy
+        return Registry.standard.proxy(type)
     }
 
     public static func resolve<S>(_ type: S.Type = S.self) -> S {
@@ -188,12 +190,12 @@ public final class Registry {
 
         let definitions = Registry.standard.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
-            .sorted { $0.name < $1.name }
+            .sorted { $0.typeName < $1.typeName }
 
-        let maxLength = definitions.map { $0.name.count}.max() ?? 0
+        let maxLength = definitions.map { $0.typeName.count}.max() ?? 0
 
         for definition in definitions {
-            let serviceName = definition.name.padding(toLength: maxLength, withPad: " ", startingAt: 0)
+            let serviceName = definition.typeName.padding(toLength: maxLength, withPad: " ", startingAt: 0)
             let status = definition.realizationStatus
 
             print("    \(serviceName) : \(status)")

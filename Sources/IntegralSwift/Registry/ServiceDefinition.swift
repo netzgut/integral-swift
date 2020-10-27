@@ -51,7 +51,7 @@ public class ServiceOptions {
 internal protocol ServiceBaseDefinition {
 
     /// Service name, derived from type
-    var name: String { get }
+    var typeName: String { get }
 
     // Has the service been realized yet?
     var isRealized: Bool { get }
@@ -78,7 +78,7 @@ internal typealias ServiceProxy<S> = () -> S
 /// Knows everything to realize/build a service by providing a proxy
 internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
-    internal var name: String
+    internal var typeName: String
 
     private var type: S.Type
     private var factory: ServiceFactory<S>
@@ -90,7 +90,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
     internal init(type: S.Type = S.self,
                   factory: @escaping ServiceFactory<S>) {
-        self.name = String(reflecting: type)
+        self.typeName = String(reflecting: type)
         self.type = type
         self.factory = factory
     }
