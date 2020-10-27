@@ -47,7 +47,6 @@ public class ServiceOptions {
     }
 }
 
-
 /// Shared protocol for easier casting/usage.
 internal protocol ServiceBaseDefinition {
 
@@ -75,7 +74,6 @@ internal extension ServiceDefinition {
 /// Helper lambda for building a service
 internal typealias ServiceProxy<S> = () -> S
 
-
 /// Definition of a Service.
 /// Knows everything to realize/build a service by providing a proxy
 internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
@@ -91,7 +89,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     internal init(type: S.Type = S.self,
-                factory: @escaping ServiceFactory<S>) {
+                  factory: @escaping ServiceFactory<S>) {
         self.name = String(reflecting: type)
         self.type = type
         self.factory = factory
