@@ -69,6 +69,7 @@ public final class Symbols {
                             _ value: T) {
 
         let def = ConstantSymbol(key: key,
+                                 type: type,
                                  value: value)
 
         self.symbols[key.rawValue] = def
@@ -138,10 +139,14 @@ public final class Symbols {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
-        // TODO: Type check for symbol
+        guard let definitionAny = self.symbols[key]  else {
+            fatalError("🚨 ERROR: Symbol '\(key)' not found")
+        }
 
-        guard let definition = self.symbols[key] as? SymbolDefinition<T> else {
-            return nil
+        guard let definition = definitionAny as? SymbolDefinition<T> else {
+            let baseDef = definitionAny as! SymbolBaseDefinition
+            let actualTypeName = String(reflecting: type)
+            fatalError("🚨 ERROR: Symbol type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
         }
 
         return definition.proxy()

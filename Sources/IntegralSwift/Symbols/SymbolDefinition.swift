@@ -14,8 +14,15 @@ import Foundation
 public typealias SymbolFactory<T> = () -> T
 public typealias SymbolProxy<T> = () -> T
 
-internal class SymbolDefinition<T> {
+internal protocol SymbolBaseDefinition {
+    var key: SymbolKey { get }
+    var typeName: String { get }
+}
+
+internal class SymbolDefinition<T>: SymbolBaseDefinition {
+
     internal var key: SymbolKey
+    internal var typeName: String
     internal var type: T.Type
     internal var factory: SymbolFactory<T>
 
@@ -23,6 +30,7 @@ internal class SymbolDefinition<T> {
                   type: T.Type,
                   factory: @escaping SymbolFactory<T>) {
         self.key = key
+        self.typeName = String(reflecting: type)
         self.type = type
         self.factory = factory
     }
@@ -37,7 +45,7 @@ internal class ConstantSymbol<T>: SymbolDefinition<T> {
     internal var value: T
 
     internal init(key: SymbolKey,
-                  type: T.Type = T.self,
+                  type: T.Type,
                   value: T) {
         self.value = value
 
