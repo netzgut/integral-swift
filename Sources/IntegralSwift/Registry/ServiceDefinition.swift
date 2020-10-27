@@ -97,7 +97,6 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
         self.factory = factory
     }
 
-    @discardableResult
     internal func proxy() -> ServiceProxy<S> {
         if let service = self.realizedService {
             return { service }
