@@ -38,7 +38,13 @@ public final class Registry {
         }
     }
 
+    private var resolveMutex = pthread_mutex_t()
+
     var printServicesOnStartup: Bool = true
+
+    public init() {
+        pthread_mutex_init(&self.resolveMutex, nil)
+    }
 
     private func register<S>(_ type: S.Type = S.self,
                              factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
@@ -137,12 +143,6 @@ public final class Registry {
         }
 
         registerFn()
-    }
-
-    private var resolveMutex = pthread_mutex_t()
-
-    public init() {
-        pthread_mutex_init(&self.resolveMutex, nil)
     }
 
     private func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S>? {

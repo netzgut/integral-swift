@@ -14,8 +14,8 @@ import Foundation
 @propertyWrapper
 public struct Inject<S> {
 
-    private var service: S?
     private var proxy: ServiceProxy<S>
+    private var service: S?
 
     public init() {
         self.proxy = Registry.proxy(S.self)
