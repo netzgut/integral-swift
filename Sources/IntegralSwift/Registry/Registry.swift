@@ -11,8 +11,11 @@
 
 import Foundation
 
+/// How to build a service, used in registrations
 public typealias ServiceFactory<S> = () -> S
 
+/// Entry-point for the IoC.
+/// All registration should be done in an extension of this protocol.
 public protocol RegistryRegistrations {
     static func registrations()
 }
@@ -75,13 +78,13 @@ public final class Registry {
 
     @discardableResult
     public static func register<S>(_ type: S.Type = S.self,
-                                   factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+                                   factory: @escaping ServiceFactory<S>) -> ServiceOptions {
         self.standard.register(type, factory: factory)
     }
 
     @discardableResult
     public static func override<S>(_ type: S.Type = S.self,
-                                   factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+                                   factory: @escaping ServiceFactory<S>) -> ServiceOptions {
         self.standard.override(type, factory: factory)
     }
 
@@ -111,10 +114,15 @@ public final class Registry {
         type(of: registrations).registrations()
 
         // Eager Load services
-        Registry.standard.serviceDefinitions.values
-            .map { $0 as! ServiceBaseDefinition } //
-            .filter { $0.realizationType == .eager } //
-            .forEach { $0.realize() }
+        for rawDefinition in Registry.standard.serviceDefinitions.values {
+            guard let serviceOptions = rawDefinition as? ServiceOptions,
+                  serviceOptions.realizationType == .eager,
+                  let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
+                break
+            }
+
+            serviceDefinition.realizeService()
+        }
 
         Registry.registerServicesOnce = nil
 
@@ -180,13 +188,15 @@ public final class Registry {
 
         let definitions = Registry.standard.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
+            .sorted{ $0.name < $1.name }
 
         let maxLength = definitions.map { $0.name.count}.max() ?? 0
 
-        definitions.sorted { $0.name < $1.name }
-            .map { "   \($0.name.padding(toLength: maxLength, withPad: " ", startingAt: 0)) : \($0.statusDescription)" }
-            .forEach { print($0) }
+        for definition in definitions {
+            let serviceName = definition.name.padding(toLength: maxLength, withPad: " ", startingAt: 0)
+            let status = definition.realizationStatus
 
+            print("    \(serviceName) : \(status)")
+        }
     }
-
 }

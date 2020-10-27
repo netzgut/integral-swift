@@ -11,50 +11,89 @@
 
 import Foundation
 
-typealias ServiceProxy<S> = () -> S
-
+/// The point in time which a Service is realized / build
 public enum ServiceRealizationType {
+    /// On injection by @Inject, without actually using the property.
     case injection
+
+    /// On first "real" usage, e.g. accessing the property.
     case lazy
+
+    // On registry startup. Used for background-like services.
     case eager
 }
 
-protocol ServiceBaseDefinition {
-    var name: String { get }
-    var realizationType: ServiceRealizationType { get }
-    var isRealized: Bool { get }
+/// Options of a service definition. Only public way to interact with a registration.
+public class ServiceOptions {
 
-    var statusDescription: String { get }
+    internal var realizationType: ServiceRealizationType = .injection
 
-    func realize()
+    @discardableResult
+    public final func lazy() -> ServiceOptions {
+        self.realizationType = .lazy
+        return self
+    }
 
+    @discardableResult
+    public final func eager() -> ServiceOptions {
+        self.realizationType = .eager
+        return self
+    }
+
+    @discardableResult
+    public final func realize(_ type: ServiceRealizationType) -> ServiceOptions {
+        self.realizationType = type
+        return self
+    }
 }
 
-extension ServiceDefinition {
 
-    var statusDescription: String {
-        let state =  self.isRealized ? "REALIZED" : "DEFINED"
+/// Shared protocol for easier casting/usage.
+internal protocol ServiceBaseDefinition {
+
+    /// Service name, derived from type
+    var name: String { get }
+
+    // Has the service been realized yet?
+    var isRealized: Bool { get }
+
+    // Current state of realization, for debugging purposes
+    var realizationStatus: String { get }
+
+    // Force the service to be realized
+    func realizeService()
+}
+
+internal extension ServiceDefinition {
+
+    var realizationStatus: String {
+        let state =  self.isRealized ? "REALIZED" : "DEFINED "
         return "\(state) (\(self.realizationType))"
     }
 }
 
-public class ServiceDefinition<S>: ServiceBaseDefinition {
+/// Helper lambda for building a service
+internal typealias ServiceProxy<S> = () -> S
 
-    var type: S.Type
-    var name: String
 
+/// Definition of a Service.
+/// Knows everything to realize/build a service by providing a proxy
+internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
+
+    internal var name: String
+
+    private var type: S.Type
     private var factory: ServiceFactory<S>
-    internal var realizationType: ServiceRealizationType = .injection
     private var realizedService: S?
 
-    var isRealized: Bool {
+    internal var isRealized: Bool {
         self.realizedService != nil
     }
 
-    public init(type: S.Type = S.self,
+    internal init(type: S.Type = S.self,
                 factory: @escaping ServiceFactory<S>) {
-        self.type = type
         self.name = String(reflecting: type)
+        self.type = type
         self.factory = factory
     }
 
@@ -65,39 +104,20 @@ public class ServiceDefinition<S>: ServiceBaseDefinition {
         }
 
         guard self.realizationType == .lazy else {
-            realize()
+            realizeService()
             return { self.realizedService! }
         }
 
         let proxy: ServiceProxy<S> = {
-            self.realize()
+            self.realizeService()
             return self.realizedService!
         }
 
         return proxy
     }
 
-    internal func realize() {
+    internal func realizeService() {
         let service = self.factory()
         self.realizedService = service
     }
-
-    @discardableResult
-    public final func lazy() -> ServiceDefinition<S> {
-        self.realizationType = .lazy
-        return self
-    }
-
-    @discardableResult
-    public final func eager() -> ServiceDefinition<S> {
-        self.realizationType = .eager
-        return self
-    }
-
-    @discardableResult
-    public final func realize(_ type: ServiceRealizationType) -> ServiceDefinition<S> {
-        self.realizationType = type
-        return self
-    }
-
 }
