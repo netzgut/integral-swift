@@ -17,12 +17,12 @@ public struct Symbol<T> {
     private var proxy: SymbolProxy<T>
     private var valueOverride: T?
 
-    public init(_ symbol: SymbolKey) {
-        self.init(symbol.rawValue)
+    public init(_ key: SymbolKey) {
+        self.init(key.rawValue)
     }
 
-    public init(_ symbol: String) {
-        self.proxy = Symbols.proxy(T.self, symbol)
+    public init(_ key: String) {
+        self.proxy = Symbols.proxy(key, T.self)
     }
 
     public var wrappedValue: T {

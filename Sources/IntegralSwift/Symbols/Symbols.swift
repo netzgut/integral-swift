@@ -55,87 +55,114 @@ public final class Symbols {
         pthread_mutex_init(&self.resolveMutex, nil)
     }
 
-    public static func add<T: Any>(_ key: SymbolKey,
+    public static func constant<T>(_ key: SymbolKey,
                                    type: T.Type = T.self,
                                    _ value: T) {
-
-        Symbols.standard.add(key,
-                             type: type,
-                             value)
+        Symbols.constant(key.rawValue,
+                         type,
+                         value)
     }
 
-    public func add<T: Any>(_ key: SymbolKey,
-                            type: T.Type = T.self,
-                            _ value: T) {
+    public static func constant<T>(_ key: String,
+                                   _ type: T.Type = T.self,
+                                   _ value: T) {
+        Symbols.standard.constant(key: key,
+                                  type: type,
+                                  value: value)
+    }
+
+    public static func constant<T>(_ key: SymbolKey,
+                                   _ type: T.Type = T.self,
+                                   factory: @escaping SymbolFactory<T>) {
+
+        Symbols.constant(key.rawValue,
+                         type,
+                         factory: factory)
+    }
+
+    public static func constant<T>(_ key: String,
+                                   _ type: T.Type = T.self,
+                                   factory: @escaping SymbolFactory<T>) {
+        Symbols.standard.constant(key: key,
+                                  type: type,
+                                  value: factory())
+    }
+
+    private func constant<T>(key: String,
+                             type: T.Type,
+                             value: T) {
 
         let def = ConstantSymbol(key: key,
                                  type: type,
                                  value: value)
-
-        self.symbols[key.rawValue] = def
+        add(def)
     }
 
-    public static func add<T: Any>(_ key: SymbolKey,
-                                   type: T.Type = T.self,
-                                   factory: @escaping SymbolFactory<T>) {
-
-        Symbols.standard.add(key,
-                             type: type,
-                             factory: factory)
+    public static func dynamic<T>(_ key: SymbolKey,
+                                  _ type: T.Type = T.self,
+                                  factory: @escaping SymbolFactory<T>) {
+        Symbols.dynamic(key.rawValue,
+                        type,
+                        factory: factory)
     }
 
-    public func add<T>(_ key: SymbolKey,
-                       type: T.Type = T.self,
-                       factory: @escaping SymbolFactory<T>) {
-
-        let def = ConstantSymbol(key: key,
-                                 type: type,
-                                 value: factory())
-
-        self.symbols[key.rawValue] = def
-    }
-
-    public static func dynamic<T: Any>(_ key: SymbolKey,
-                                       type: T.Type = T.self,
-                                       factory: @escaping SymbolFactory<T>) {
-        Symbols.standard.dynamic(key,
+    public static func dynamic<T>(_ key: String,
+                                  _ type: T.Type = T.self,
+                                  factory: @escaping SymbolFactory<T>) {
+        Symbols.standard.dynamic(key: key,
                                  type: type,
                                  factory: factory)
     }
 
-    public func dynamic<T>(_ key: SymbolKey,
-                           type: T.Type = T.self,
-                           factory: @escaping SymbolFactory<T>) {
+    private func dynamic<T>(key: String,
+                            type: T.Type,
+                            factory: @escaping SymbolFactory<T>) {
 
         let def = DynamicSymbol(key: key,
                                 type: type,
                                 factory: factory)
-
-        self.symbols[key.rawValue] = def
+        add(def)
     }
 
     public static func lazy<T>(_ key: SymbolKey,
-                               type: T.Type = T.self,
+                               _ type: T.Type = T.self,
                                factory: @escaping SymbolFactory<T>) {
 
-        Symbols.standard.lazy(key,
+        Symbols.lazy(key.rawValue,
+                     type,
+                     factory: factory)
+    }
+
+    public static func lazy<T>(_ key: String,
+                               _ type: T.Type = T.self,
+                               factory: @escaping SymbolFactory<T>) {
+
+        Symbols.standard.lazy(key: key,
                               type: type,
                               factory: factory)
     }
 
-    public func lazy<T>(_ key: SymbolKey,
-                        type: T.Type = T.self,
-                        factory: @escaping SymbolFactory<T>) {
+    private func lazy<T>(key: String,
+                         type: T.Type,
+                         factory: @escaping SymbolFactory<T>) {
 
         let def = LazySymbol(key: key,
                              type: type,
                              factory: factory)
 
-        self.symbols[key.rawValue] = def
+        add(def)
     }
 
-    private func proxy<T>(_ type: T.Type = T.self,
-                          _ key: String) -> SymbolProxy<T>? {
+    private func add(_ def: SymbolBaseDefinition) {
+        if let alreadyRegistered = self.symbols[def.key] as? SymbolBaseDefinition {
+            print("⚠️ WARNING: Symbol '\(alreadyRegistered.description)' is already registered and will be overriden by '\(def.description)'.")
+        }
+
+        self.symbols[def.key] = def
+    }
+
+    private func proxy<T>(_ key: String,
+                          _ type: T.Type = T.self) -> SymbolProxy<T>? {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
@@ -152,9 +179,9 @@ public final class Symbols {
         return definition.proxy()
     }
 
-    internal static func proxy<T>(_ type: T.Type = T.self,
-                                  _ key: String) -> SymbolProxy<T> {
-        guard let proxy = Symbols.standard.proxy(type, key) else {
+    internal static func proxy<T>(_ key: String,
+                                  _ type: T.Type = T.self) -> SymbolProxy<T> {
+        guard let proxy = Symbols.standard.proxy(key, type) else {
             fatalError("Symbol '\(key)' not found")
         }
 

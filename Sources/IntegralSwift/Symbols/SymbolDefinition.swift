@@ -14,19 +14,20 @@ import Foundation
 public typealias SymbolFactory<T> = () -> T
 public typealias SymbolProxy<T> = () -> T
 
-internal protocol SymbolBaseDefinition {
-    var key: SymbolKey { get }
+internal protocol SymbolBaseDefinition: CustomStringConvertible {
+    var key: String { get }
     var typeName: String { get }
+    var symbolType: String { get }
 }
 
 internal class SymbolDefinition<T>: SymbolBaseDefinition {
 
-    internal var key: SymbolKey
+    internal var key: String
     internal var typeName: String
     internal var type: T.Type
     internal var factory: SymbolFactory<T>
 
-    internal init(key: SymbolKey,
+    internal init(key: String,
                   type: T.Type,
                   factory: @escaping SymbolFactory<T>) {
         self.key = key
@@ -38,13 +39,25 @@ internal class SymbolDefinition<T>: SymbolBaseDefinition {
     internal func proxy() -> SymbolProxy<T> {
         fatalError("Must be overriden")
     }
+
+    var symbolType: String {
+        fatalError("Must be overriden")
+    }
+
+    var description: String {
+        "\(self.key) -> \(self.typeName) (\(self.symbolType))"
+    }
 }
 
 internal class ConstantSymbol<T>: SymbolDefinition<T> {
 
+    override var symbolType: String {
+        "constant"
+    }
+
     internal var value: T
 
-    internal init(key: SymbolKey,
+    internal init(key: String,
                   type: T.Type,
                   value: T) {
         self.value = value
@@ -61,12 +74,20 @@ internal class ConstantSymbol<T>: SymbolDefinition<T> {
 
 internal class DynamicSymbol<T>: SymbolDefinition<T> {
 
+    override var symbolType: String {
+        "dynamic"
+    }
+
     override internal func proxy() -> SymbolProxy<T> {
         { self.factory() }
     }
 }
 
 class LazySymbol<T>: SymbolDefinition<T> {
+
+    override var symbolType: String {
+        "lazy"
+    }
 
     internal var value: T?
 
