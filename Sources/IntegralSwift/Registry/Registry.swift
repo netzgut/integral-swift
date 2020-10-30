@@ -34,7 +34,9 @@ public final class Registry {
     private var _serviceDefinitions = [Int: Any]()
     private var serviceDefinitions: [Int: Any] {
         get {
-            self.registrationQueue.sync { self._serviceDefinitions }
+            self.registrationQueue.sync {
+                self._serviceDefinitions
+            }
         }
         set {
             self.registrationQueue.async(flags: .barrier) {
@@ -43,13 +45,19 @@ public final class Registry {
         }
     }
 
-    private var resolveMutex = pthread_mutex_t()
+    // MARK: - MUTEX
 
-    // MARK: - LIFECYCLE
+    private static var registrationMutex: pthread_mutex_t = {
+        var mutex = pthread_mutex_t()
+        pthread_mutex_init(&mutex, nil)
+        return mutex
+    }()
 
-    public init() {
-        pthread_mutex_init(&self.resolveMutex, nil)
-    }
+    private static var resolveMutex: pthread_mutex_t = {
+        var mutex = pthread_mutex_t()
+        pthread_mutex_init(&mutex, nil)
+        return mutex
+    }()
 
     // MARK: - REGISTRATION METHODS (PUBLIC)
 
@@ -115,12 +123,6 @@ public final class Registry {
         return definition
     }
 
-    private static var registrationMutex: pthread_mutex_t = {
-        var mutex = pthread_mutex_t()
-        pthread_mutex_init(&mutex, nil)
-        return mutex
-    }()
-
     // MARK: - STARTUP
 
     private typealias ServicesRegsitrationFn = () -> Void
@@ -129,19 +131,31 @@ public final class Registry {
 
     private static func registerServices() {
         pthread_mutex_lock(&Registry.registrationMutex)
-        defer {
-            pthread_mutex_unlock(&Registry.registrationMutex)
-        }
 
         // Make sure we haven't run registry startup yet
         guard Registry.registerServicesOnce != nil,
               let registrations = (Registry.standard as Any) as? RegistryRegistrations else {
+            pthread_mutex_unlock(&Registry.registrationMutex)
             return
         }
 
         // Startup registry
         type(of: registrations).onStartup()
 
+        // We need to set it nil before actually registering the services,
+        // eager loading might crash due to not finished regist
+        Registry.registerServicesOnce = nil
+
+        pthread_mutex_unlock(&Registry.registrationMutex)
+
+        eagerLoadServices()
+
+        if Registry.printServicesOnStartup {
+            printServices()
+        }
+    }
+
+    private static func eagerLoadServices() {
         // Eager Load services
         for rawDefinition in Registry.standard.serviceDefinitions.values {
             guard let serviceOptions = rawDefinition as? ServiceOptions,
@@ -151,12 +165,6 @@ public final class Registry {
             }
 
             serviceDefinition.realizeService()
-        }
-
-        Registry.registerServicesOnce = nil
-
-        if Registry.printServicesOnStartup {
-            printServices()
         }
     }
 
@@ -173,19 +181,22 @@ public final class Registry {
     // MARK: - PROXY / RESOLVE
 
     private func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
-        pthread_mutex_lock(&self.resolveMutex)
-        defer { pthread_mutex_unlock(&self.resolveMutex) }
+        pthread_mutex_lock(&Registry.resolveMutex)
 
         let identifier = buildIdentitier(type)
         guard let definitionAny = self.serviceDefinitions[identifier]  else {
+            pthread_mutex_unlock(&Registry.resolveMutex)
             fatalError("🚨 ERROR: No registration for type \(type) found")
         }
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
             let baseDef = definitionAny as! ServiceBaseDefinition
             let actualTypeName = String(reflecting: type)
+            pthread_mutex_unlock(&Registry.resolveMutex)
             fatalError("🚨 ERROR: Registration type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
         }
+
+        pthread_mutex_unlock(&Registry.resolveMutex)
 
         return definition.proxy()
     }
