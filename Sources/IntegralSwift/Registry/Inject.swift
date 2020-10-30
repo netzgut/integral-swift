@@ -11,10 +11,14 @@
 
 import Foundation
 
+/// Injection property wrapper.
+///
+/// Regardless of ServiceRealizationType (e.g. injection, lazy, eager) only one wrapper is used.
+/// The underlying service definition is responsible for how a service is actually handled.
 @propertyWrapper
 public struct Inject<S> {
 
-    private var proxy: ServiceProxy<S>
+    private var proxy: Proxy<S>
     private var service: S?
 
     public init() {

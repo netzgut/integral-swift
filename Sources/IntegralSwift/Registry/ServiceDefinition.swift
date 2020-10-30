@@ -28,18 +28,21 @@ public class ServiceOptions {
 
     internal var realizationType: ServiceRealizationType = .injection
 
+    /// Marks a service as "lazy", so it's realized at first access, not at injection.
     @discardableResult
     public final func lazy() -> ServiceOptions {
         self.realizationType = .lazy
         return self
     }
 
+    /// Marks a service as "eager", so it's realized at Registry startup (e.g. background helper).
     @discardableResult
     public final func eager() -> ServiceOptions {
         self.realizationType = .eager
         return self
     }
 
+    /// Changes the ServiceRealizationType of a service.
     @discardableResult
     public final func realize(_ type: ServiceRealizationType) -> ServiceOptions {
         self.realizationType = type
@@ -47,7 +50,6 @@ public class ServiceOptions {
     }
 }
 
-/// Shared protocol for easier casting/usage.
 internal protocol ServiceBaseDefinition {
 
     /// Service name, derived from type
@@ -71,9 +73,6 @@ internal extension ServiceDefinition {
     }
 }
 
-/// Helper lambda for building a service
-internal typealias ServiceProxy<S> = () -> S
-
 /// Definition of a Service.
 /// Knows everything to realize/build a service by providing a proxy
 internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
@@ -81,7 +80,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     internal var typeName: String
 
     private var type: S.Type
-    private var factory: ServiceFactory<S>
+    private var factory: Factory<S>
     private var realizedService: S?
 
     internal var isRealized: Bool {
@@ -89,13 +88,13 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     internal init(type: S.Type = S.self,
-                  factory: @escaping ServiceFactory<S>) {
+                  factory: @escaping Factory<S>) {
         self.typeName = String(reflecting: type)
         self.type = type
         self.factory = factory
     }
 
-    internal func proxy() -> ServiceProxy<S> {
+    internal func proxy() -> Proxy<S> {
         if let service = self.realizedService {
             return { service }
         }
@@ -105,7 +104,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
             return { self.realizedService! }
         }
 
-        let proxy: ServiceProxy<S> = {
+        let proxy: Proxy<S> = {
             self.realizeService()
             return self.realizedService!
         }

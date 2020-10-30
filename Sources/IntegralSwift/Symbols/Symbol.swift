@@ -14,7 +14,7 @@ import Foundation
 @propertyWrapper
 public struct Symbol<T> {
 
-    private var proxy: SymbolProxy<T>
+    private var proxy: Proxy<T>
     private var valueOverride: T?
 
     public init(_ key: SymbolKey) {

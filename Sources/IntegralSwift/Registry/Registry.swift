@@ -11,16 +11,21 @@
 
 import Foundation
 
-/// How to build a service, used in registrations
-public typealias ServiceFactory<S> = () -> S
-
-/// Entry-point for the IoC.
+/// Entry-point for the Registry.
 /// All registration should be done in an extension of this protocol.
 public protocol RegistryRegistrations {
     static func onStartup()
 }
 
+// The dependency injection container that contains all service definitions.
 public final class Registry {
+
+    // MARK: - SETTINGS
+
+    // Prints all registered services after registry has started
+    static var printServicesOnStartup: Bool = true
+
+    // MARK: - PRIVATE PROPERTIES
 
     private static var standard = Registry()
 
@@ -40,14 +45,42 @@ public final class Registry {
 
     private var resolveMutex = pthread_mutex_t()
 
-    var printServicesOnStartup: Bool = true
+    // MARK: - LIFECYCLE
 
     public init() {
         pthread_mutex_init(&self.resolveMutex, nil)
     }
 
+    // MARK: - REGISTRATION METHODS (PUBLIC)
+
+    /// Registers a service. Warns if service is already registered. Will be registered anyway.
+    ///
+    /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
+    /// - parameter factory: Closure that returns the actual service
+    ///
+    /// - returns: ServiceOptions for further configuration.
+    @discardableResult
+    public static func register<S>(_ type: S.Type = S.self,
+                                   factory: @escaping Factory<S>) -> ServiceOptions {
+        self.standard.register(type, factory: factory)
+    }
+
+    /// Override a service. Warns if service is niot registered. Will be overridden/registered anyway.
+    ///
+    /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
+    /// - parameter factory: Closure that returns the actual service
+    ///
+    /// - returns: ServiceOptions for further configuration.
+    @discardableResult
+    public static func override<S>(_ type: S.Type = S.self,
+                                   factory: @escaping Factory<S>) -> ServiceOptions {
+        self.standard.override(type, factory: factory)
+    }
+
+    // MARK: - REGISTRATION METHODS (PRIVATE)
+
     private func register<S>(_ type: S.Type = S.self,
-                             factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+                             factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
         let identifier = buildIdentitier(type)
 
@@ -65,7 +98,7 @@ public final class Registry {
     }
 
     private func override<S>(_ type: S.Type = S.self,
-                             factory: @escaping ServiceFactory<S>) -> ServiceDefinition<S> {
+                             factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
         let identifier = buildIdentitier(type)
 
@@ -82,23 +115,13 @@ public final class Registry {
         return definition
     }
 
-    @discardableResult
-    public static func register<S>(_ type: S.Type = S.self,
-                                   factory: @escaping ServiceFactory<S>) -> ServiceOptions {
-        self.standard.register(type, factory: factory)
-    }
-
-    @discardableResult
-    public static func override<S>(_ type: S.Type = S.self,
-                                   factory: @escaping ServiceFactory<S>) -> ServiceOptions {
-        self.standard.override(type, factory: factory)
-    }
-
     private static var registrationMutex: pthread_mutex_t = {
         var mutex = pthread_mutex_t()
         pthread_mutex_init(&mutex, nil)
         return mutex
     }()
+
+    // MARK: - STARTUP
 
     private typealias ServicesRegsitrationFn = () -> Void
 
@@ -132,11 +155,13 @@ public final class Registry {
 
         Registry.registerServicesOnce = nil
 
-        if Registry.standard.printServicesOnStartup {
+        if Registry.printServicesOnStartup {
             printServices()
         }
     }
 
+    /// Starts the registry.
+    /// The call MUST be done explicetly, so eager services can be constructed immediatly.
     public static func performStartup() {
         guard let registerFn = Registry.registerServicesOnce else {
             fatalError("🚨 ERROR: Registry was already started!")
@@ -145,7 +170,9 @@ public final class Registry {
         registerFn()
     }
 
-    private func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
+    // MARK: - PROXY / RESOLVE
+
+    private func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
@@ -163,7 +190,7 @@ public final class Registry {
         return definition.proxy()
     }
 
-    internal static func proxy<S>(_ type: S.Type = S.self) -> ServiceProxy<S> {
+    internal static func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
         guard self.registerServicesOnce == nil else {
             fatalError("🚨 ERROR: Registry MUST be started manually!")
         }
@@ -171,16 +198,16 @@ public final class Registry {
         return Registry.standard.proxy(type)
     }
 
+    /// Immediatly resolves a service, regardles of its realization type.
     public static func resolve<S>(_ type: S.Type = S.self) -> S {
         let proxyFn = Registry.proxy(type)
         let service = proxyFn()
         return service
     }
 
-    private func buildIdentitier<S>(_ type: S.Type) -> Int {
-        ObjectIdentifier(type).hashValue
-    }
+    // MARK: - HELPER (PUBLIC)
 
+    /// Prints all registered services.
     public static func printServices() {
         print("📖 REGISTERED SERVICES:")
         guard Registry.standard.serviceDefinitions.isEmpty == false else {
@@ -200,5 +227,11 @@ public final class Registry {
 
             print("    \(serviceName) : \(status)")
         }
+    }
+
+    // MARK: - HELPER (PRIVATE)
+
+    private func buildIdentitier<S>(_ type: S.Type) -> Int {
+        ObjectIdentifier(type).hashValue
     }
 }

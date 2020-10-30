@@ -73,7 +73,7 @@ public final class Symbols {
 
     public static func constant<T>(_ key: SymbolKey,
                                    _ type: T.Type = T.self,
-                                   factory: @escaping SymbolFactory<T>) {
+                                   factory: @escaping Factory<T>) {
 
         Symbols.constant(key.rawValue,
                          type,
@@ -82,7 +82,7 @@ public final class Symbols {
 
     public static func constant<T>(_ key: String,
                                    _ type: T.Type = T.self,
-                                   factory: @escaping SymbolFactory<T>) {
+                                   factory: @escaping Factory<T>) {
         Symbols.standard.constant(key: key,
                                   type: type,
                                   value: factory())
@@ -100,7 +100,7 @@ public final class Symbols {
 
     public static func dynamic<T>(_ key: SymbolKey,
                                   _ type: T.Type = T.self,
-                                  factory: @escaping SymbolFactory<T>) {
+                                  factory: @escaping Factory<T>) {
         Symbols.dynamic(key.rawValue,
                         type,
                         factory: factory)
@@ -108,7 +108,7 @@ public final class Symbols {
 
     public static func dynamic<T>(_ key: String,
                                   _ type: T.Type = T.self,
-                                  factory: @escaping SymbolFactory<T>) {
+                                  factory: @escaping Factory<T>) {
         Symbols.standard.dynamic(key: key,
                                  type: type,
                                  factory: factory)
@@ -116,7 +116,7 @@ public final class Symbols {
 
     private func dynamic<T>(key: String,
                             type: T.Type,
-                            factory: @escaping SymbolFactory<T>) {
+                            factory: @escaping Factory<T>) {
 
         let def = DynamicSymbol(key: key,
                                 type: type,
@@ -126,7 +126,7 @@ public final class Symbols {
 
     public static func lazy<T>(_ key: SymbolKey,
                                _ type: T.Type = T.self,
-                               factory: @escaping SymbolFactory<T>) {
+                               factory: @escaping Factory<T>) {
 
         Symbols.lazy(key.rawValue,
                      type,
@@ -135,7 +135,7 @@ public final class Symbols {
 
     public static func lazy<T>(_ key: String,
                                _ type: T.Type = T.self,
-                               factory: @escaping SymbolFactory<T>) {
+                               factory: @escaping Factory<T>) {
 
         Symbols.standard.lazy(key: key,
                               type: type,
@@ -144,7 +144,7 @@ public final class Symbols {
 
     private func lazy<T>(key: String,
                          type: T.Type,
-                         factory: @escaping SymbolFactory<T>) {
+                         factory: @escaping Factory<T>) {
 
         let def = LazySymbol(key: key,
                              type: type,
@@ -162,7 +162,7 @@ public final class Symbols {
     }
 
     private func proxy<T>(_ key: String,
-                          _ type: T.Type = T.self) -> SymbolProxy<T>? {
+                          _ type: T.Type = T.self) -> Proxy<T>? {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
@@ -180,7 +180,7 @@ public final class Symbols {
     }
 
     internal static func proxy<T>(_ key: String,
-                                  _ type: T.Type = T.self) -> SymbolProxy<T> {
+                                  _ type: T.Type = T.self) -> Proxy<T> {
         guard let proxy = Symbols.standard.proxy(key, type) else {
             fatalError("Symbol '\(key)' not found")
         }
