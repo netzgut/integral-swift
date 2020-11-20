@@ -15,6 +15,15 @@ import Foundation
 /// All registration should be done in an extension of this protocol.
 public protocol RegistryRegistrations {
     static func onStartup()
+
+    static func onShutdown()
+}
+
+public extension RegistryRegistrations {
+
+    static func onShutdown() {
+        // NOOP
+    }
 }
 
 // The dependency injection container that contains all service definitions.
@@ -155,6 +164,23 @@ public final class Registry {
         }
     }
 
+    private static func shutdownRegistry() {
+        pthread_mutex_lock(&Registry.registrationMutex)
+
+        // Make sure we haven't run registry startup yet
+
+        guard Registry.registerServicesOnce == nil,
+              Registry.standard.serviceDefinitions.isEmpty == false else {
+            pthread_mutex_unlock(&Registry.registrationMutex)
+            return
+        }
+
+        Registry.standard.serviceDefinitions = [Int: Any]()
+        Registry.registerServicesOnce = Registry.registerServices
+
+        pthread_mutex_unlock(&Registry.registrationMutex)
+    }
+
     private static func eagerLoadServices() {
         // Eager Load services
         for rawDefinition in Registry.standard.serviceDefinitions.values {
@@ -176,6 +202,14 @@ public final class Registry {
         }
 
         registerFn()
+    }
+
+    public static func performShutdown() {
+        guard Registry.registerServicesOnce == nil else {
+            fatalError("🚨 ERROR: Registry wasn't started yet!")
+        }
+
+        shutdownRegistry()
     }
 
     // MARK: - PROXY / RESOLVE

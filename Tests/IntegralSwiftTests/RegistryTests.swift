@@ -40,6 +40,8 @@ final class RegistryTests: XCTestCase {
         func testValue() -> String {
             self.service.testValue()
         }
+
+        var random: String = UUID().uuidString
     }
 
     func testExample() {
@@ -53,6 +55,32 @@ final class RegistryTests: XCTestCase {
         // ASSERT
         XCTAssertEqual(testData.testValue(), "test")
         XCTAssertEqual(testData.testValue(), "test")
+    }
+
+    func testExample2() {
+
+        // ARRANGE / ACT
+
+        Registry.performStartup()
+        let testData1: TestData = TestData()
+
+        print("Before resolving")
+
+        // ASSERT
+
+        XCTAssertEqual(testData1.testValue(), "test")
+        XCTAssertEqual(testData1.testValue(), "test")
+        XCTAssertEqual(testData1.random, testData1.random)
+
+        // ACT
+
+        Registry.performShutdown()
+
+        Registry.performStartup()
+        let testData2: TestData = TestData()
+
+        XCTAssertNotEqual(testData1.random, testData2.random)
+
     }
 
     static var allTests = [
