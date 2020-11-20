@@ -55,14 +55,17 @@ internal protocol ServiceBaseDefinition {
     /// Service name, derived from type
     var typeName: String { get }
 
-    // Has the service been realized yet?
+    /// Has the service been realized yet?
     var isRealized: Bool { get }
 
-    // Current state of realization, for debugging purposes
+    /// Current state of realization, for debugging purposes
     var realizationStatus: String { get }
 
-    // Force the service to be realized
+    /// Force the service to be realized
     func realizeService()
+
+    /// Is the proxy/it's owning registry still active?
+    var isActive: Bool { get set }
 }
 
 internal extension ServiceDefinition {
@@ -83,6 +86,8 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     private var factory: Factory<S>
     private var realizedService: S?
 
+    internal var isActive: Bool = true
+
     internal var isRealized: Bool {
         self.realizedService != nil
     }
@@ -95,6 +100,10 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     internal func proxy() -> Proxy<S> {
+        guard self.isActive else {
+            fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be created.")
+        }
+
         if let service = self.realizedService {
             return { service }
         }
@@ -113,6 +122,10 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     internal func realizeService() {
+        guard self.isActive else {
+            fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be realized.")
+        }
+
         let service = self.factory()
         self.realizedService = service
     }

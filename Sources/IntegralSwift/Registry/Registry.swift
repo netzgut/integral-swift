@@ -175,6 +175,10 @@ public final class Registry {
             return
         }
 
+        for case var def as ServiceBaseDefinition in Registry.standard.serviceDefinitions {
+            def.isActive = false
+        }
+
         Registry.standard.serviceDefinitions = [Int: Any]()
         Registry.registerServicesOnce = Registry.registerServices
 
