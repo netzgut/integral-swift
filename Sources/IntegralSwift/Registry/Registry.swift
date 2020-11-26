@@ -94,6 +94,30 @@ public final class Registry {
         self.standard.override(type, factory: factory)
     }
 
+    /// Registers a service as lazy. Warns if service is already registered. Will be registered anyway.
+    ///
+    /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
+    /// - parameter factory: Closure that returns the actual service
+    ///
+    /// - returns: ServiceOptions for further configuration.
+    @discardableResult
+    public static func lazy<S>(_ type: S.Type = S.self,
+                               factory: @escaping Factory<S>) -> ServiceOptions {
+        self.standard.register(type, factory: factory).lazy()
+    }
+
+    /// Registers a service as eager loaded. Warns if service is already registered. Will be registered anyway.
+    ///
+    /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
+    /// - parameter factory: Closure that returns the actual service
+    ///
+    /// - returns: ServiceOptions for further configuration.
+    @discardableResult
+    public static func eager<S>(_ type: S.Type = S.self,
+                                factory: @escaping Factory<S>) -> ServiceOptions {
+        self.standard.register(type, factory: factory).eager()
+    }
+
     // MARK: - REGISTRATION METHODS (PRIVATE)
 
     private func register<S>(_ type: S.Type = S.self,
