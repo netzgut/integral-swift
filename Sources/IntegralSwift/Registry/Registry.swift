@@ -31,8 +31,8 @@ public final class Registry {
 
     // MARK: - SETTINGS
 
-    // Prints all registered services after registry has started
-    static var printServicesOnStartup: Bool = true
+    /// Prints all registered services after registry has started
+    public static var printServicesOnStartup: Bool = true
 
     // MARK: - PRIVATE PROPERTIES
 
