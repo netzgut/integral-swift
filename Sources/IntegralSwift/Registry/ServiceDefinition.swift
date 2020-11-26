@@ -26,7 +26,7 @@ public enum ServiceRealizationType {
 /// Options of a service definition. Only public way to interact with a registration.
 public class ServiceOptions {
 
-    internal var realizationType: ServiceRealizationType = .injection
+    internal var realizationType: ServiceRealizationType = Registry.defaultServiceRealizationType
 
     /// Marks a service as "lazy", so it's realized at first access, not at injection.
     @discardableResult

@@ -34,6 +34,9 @@ public final class Registry {
     /// Prints all registered services after registry has started
     public static var printServicesOnStartup: Bool = true
 
+    /// Prints all registered services after registry has started
+    public static var defaultServiceRealizationType: ServiceRealizationType = .injection
+
     // MARK: - PRIVATE PROPERTIES
 
     private static var standard = Registry()
