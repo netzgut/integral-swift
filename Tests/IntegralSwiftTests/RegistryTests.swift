@@ -14,7 +14,6 @@ extension Registry: RegistryRegistrations {
             print("Resolving")
             return EagerTestService()
         }.eager()
-
     }
 }
 
@@ -44,15 +43,23 @@ final class RegistryTests: XCTestCase {
         var random: String = UUID().uuidString
     }
 
+    override func setUp() {
+        Registry.performStartup()
+    }
+
+    override func tearDown() {
+        Registry.performShutdown()
+    }
+
     func testExample() {
 
         // ARRANGE / ACT
-        Registry.performStartup()
-        let testData: TestData = TestData()
 
+        let testData: TestData = TestData()
         print("Before resolving")
 
         // ASSERT
+
         XCTAssertEqual(testData.testValue(), "test")
         XCTAssertEqual(testData.testValue(), "test")
     }
@@ -61,7 +68,6 @@ final class RegistryTests: XCTestCase {
 
         // ARRANGE / ACT
 
-        Registry.performStartup()
         let testData1: TestData = TestData()
 
         print("Before resolving")
