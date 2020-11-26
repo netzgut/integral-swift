@@ -146,7 +146,7 @@ public final class Registry {
 
         let identifier = buildIdentitier(type)
 
-        if self.serviceDefinitions[identifier] != nil {
+        if self.serviceDefinitions[identifier] == nil {
             let name = String(reflecting: type)
             print("⚠️ WARNING: No service registred for '\(name)'. Use 'Registry.register(...)' instead.")
         }
