@@ -5,7 +5,7 @@
 //
 //  Copyright (c) 2020 Ben Weidig
 //
-//  This work is licensed under the erms of the MIT license.
+//  This work is licensed under the terms of the MIT license.
 //  For a copy, see LICENSE, or <https://opensource.org/licenses/MIT>
 //
 
@@ -33,7 +33,7 @@ public struct SymbolKey: RawRepresentable, Equatable, Hashable, Comparable {
 
 public final class Symbols {
 
-    internal static let standard = Symbols()
+    internal static let instance = Symbols()
 
     private let symbolsQueue = DispatchQueue(label: "integral-symbols.queue",
                                              attributes: .concurrent)
@@ -66,7 +66,7 @@ public final class Symbols {
     public static func constant<T>(_ key: String,
                                    _ type: T.Type = T.self,
                                    _ value: T) {
-        Symbols.standard.constant(key: key,
+        Symbols.instance.constant(key: key,
                                   type: type,
                                   value: value)
     }
@@ -83,7 +83,7 @@ public final class Symbols {
     public static func constant<T>(_ key: String,
                                    _ type: T.Type = T.self,
                                    factory: @escaping Factory<T>) {
-        Symbols.standard.constant(key: key,
+        Symbols.instance.constant(key: key,
                                   type: type,
                                   value: factory())
     }
@@ -109,7 +109,7 @@ public final class Symbols {
     public static func dynamic<T>(_ key: String,
                                   _ type: T.Type = T.self,
                                   factory: @escaping Factory<T>) {
-        Symbols.standard.dynamic(key: key,
+        Symbols.instance.dynamic(key: key,
                                  type: type,
                                  factory: factory)
     }
@@ -137,7 +137,7 @@ public final class Symbols {
                                _ type: T.Type = T.self,
                                factory: @escaping Factory<T>) {
 
-        Symbols.standard.lazy(key: key,
+        Symbols.instance.lazy(key: key,
                               type: type,
                               factory: factory)
     }
@@ -181,7 +181,7 @@ public final class Symbols {
 
     internal static func proxy<T>(_ key: String,
                                   _ type: T.Type = T.self) -> Proxy<T> {
-        guard let proxy = Symbols.standard.proxy(key, type) else {
+        guard let proxy = Symbols.instance.proxy(key, type) else {
             fatalError("Symbol '\(key)' not found")
         }
 

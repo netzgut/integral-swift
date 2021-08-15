@@ -5,26 +5,11 @@
 //
 //  Copyright (c) 2020 Ben Weidig
 //
-//  This work is licensed under the erms of the MIT license.
+//  This work is licensed under the terms of the MIT license.
 //  For a copy, see LICENSE, or <https://opensource.org/licenses/MIT>
 //
 
 import Foundation
-
-/// Entry-point for the Registry.
-/// All registration should be done in an extension of this protocol.
-public protocol RegistryRegistrations {
-    static func onStartup()
-
-    static func onShutdown()
-}
-
-public extension RegistryRegistrations {
-
-    static func onShutdown() {
-        // NOOP
-    }
-}
 
 // The dependency injection container that contains all service definitions.
 public final class Registry {
@@ -39,7 +24,7 @@ public final class Registry {
 
     // MARK: - PRIVATE PROPERTIES
 
-    private static var standard = Registry()
+    private static var instance = Registry()
 
     private let registrationQueue = DispatchQueue(label: "integral-registry.registrationQueue",
                                                   attributes: .concurrent)
@@ -56,6 +41,8 @@ public final class Registry {
             }
         }
     }
+
+    private static var registeredModules = Set<String>()
 
     // MARK: - MUTEX
 
@@ -82,7 +69,7 @@ public final class Registry {
     @discardableResult
     public static func register<S>(_ type: S.Type = S.self,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.standard.register(type, factory: factory)
+        self.instance.register(type, factory: factory)
     }
 
     /// Override a service. Warns if service is niot registered. Will be overridden/registered anyway.
@@ -94,7 +81,7 @@ public final class Registry {
     @discardableResult
     public static func override<S>(_ type: S.Type = S.self,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.standard.override(type, factory: factory)
+        self.instance.override(type, factory: factory)
     }
 
     /// Registers a service as lazy. Warns if service is already registered. Will be registered anyway.
@@ -106,7 +93,7 @@ public final class Registry {
     @discardableResult
     public static func lazy<S>(_ type: S.Type = S.self,
                                factory: @escaping Factory<S>) -> ServiceOptions {
-        self.standard.register(type, factory: factory).lazy()
+        self.instance.register(type, factory: factory).lazy()
     }
 
     /// Registers a service as eager loaded. Warns if service is already registered. Will be registered anyway.
@@ -118,7 +105,7 @@ public final class Registry {
     @discardableResult
     public static func eager<S>(_ type: S.Type = S.self,
                                 factory: @escaping Factory<S>) -> ServiceOptions {
-        self.standard.register(type, factory: factory).eager()
+        self.instance.register(type, factory: factory).eager()
     }
 
     // MARK: - REGISTRATION METHODS (PRIVATE)
@@ -161,22 +148,21 @@ public final class Registry {
 
     // MARK: - STARTUP
 
-    private typealias ServicesRegsitrationFn = () -> Void
+    private typealias ServicesRegistrationFn = () -> Void
 
-    private static var registerServicesOnce: ServicesRegsitrationFn? = Registry.registerServices
+    private static var registerServicesOnce: ServicesRegistrationFn? = Registry.registerServices
 
     private static func registerServices() {
         pthread_mutex_lock(&Registry.registrationMutex)
 
         // Make sure we haven't run registry startup yet
         guard Registry.registerServicesOnce != nil,
-              let registrations = (Registry.standard as Any) as? RegistryRegistrations else {
+              let registrations = (Registry.instance as Any) as? RegistryModule else {
             pthread_mutex_unlock(&Registry.registrationMutex)
             return
         }
 
-        // Startup registry
-        type(of: registrations).onStartup()
+        register(modules: [type(of: registrations)])
 
         // We need to set it nil before actually registering the services,
         // eager loading might crash due to not finished regist
@@ -191,34 +177,66 @@ public final class Registry {
         }
     }
 
+    private static func register(modules: [RegistryModule.Type]) {
+        for module in modules {
+
+            let moduleName = String(reflecting: module)
+
+            register(modules: module.imports())
+
+            if self.registeredModules.contains(moduleName) {
+                print("⚠️ WARNING: Module '\(moduleName)' is already imported.")
+                continue
+            }
+
+            module.onStartup()
+            self.registeredModules.insert(moduleName)
+        }
+    }
+
     private static func shutdownRegistry() {
         pthread_mutex_lock(&Registry.registrationMutex)
 
         // Make sure we haven't run registry startup yet
 
         guard Registry.registerServicesOnce == nil,
-              Registry.standard.serviceDefinitions.isEmpty == false else {
+              Registry.instance.serviceDefinitions.isEmpty == false,
+              let registrations = (Registry.instance as Any) as? RegistryModule else {
             pthread_mutex_unlock(&Registry.registrationMutex)
             return
         }
 
-        for case var def as ServiceBaseDefinition in Registry.standard.serviceDefinitions {
-            def.isActive = false
+        shutdown(modules: [type(of: registrations)])
+
+        for maybeDef in Registry.instance.serviceDefinitions {
+
+            if var def = maybeDef.value as? ServiceBaseDefinition {
+                def.isActive = false
+            }
         }
 
-        Registry.standard.serviceDefinitions = [Int: Any]()
+        Registry.instance.serviceDefinitions = [Int: Any]()
+        Registry.registeredModules = Set<String>()
         Registry.registerServicesOnce = Registry.registerServices
 
         pthread_mutex_unlock(&Registry.registrationMutex)
     }
 
+    private static func shutdown(modules: [RegistryModule.Type]) {
+        for module in modules {
+            let moduleImports = module.imports()
+            shutdown(modules: moduleImports)
+            module.onShutdown()
+        }
+    }
+
     private static func eagerLoadServices() {
         // Eager Load services
-        for rawDefinition in Registry.standard.serviceDefinitions.values {
+        for rawDefinition in Registry.instance.serviceDefinitions.values {
             guard let serviceOptions = rawDefinition as? ServiceOptions,
                   serviceOptions.realizationType == .eager,
                   let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
-                break
+                continue
             }
 
             serviceDefinition.realizeService()
@@ -271,7 +289,7 @@ public final class Registry {
             fatalError("🚨 ERROR: Registry MUST be started manually!")
         }
 
-        return Registry.standard.proxy(type)
+        return Registry.instance.proxy(type)
     }
 
     /// Immediatly resolves a service, regardles of its realization type.
@@ -286,12 +304,12 @@ public final class Registry {
     /// Prints all registered services.
     public static func printServices() {
         print("📖 REGISTERED SERVICES:")
-        guard Registry.standard.serviceDefinitions.isEmpty == false else {
+        guard Registry.instance.serviceDefinitions.isEmpty == false else {
             print("   No services registered")
             return
         }
 
-        let definitions = Registry.standard.serviceDefinitions.values
+        let definitions = Registry.instance.serviceDefinitions.values
             .map { $0 as! ServiceBaseDefinition}
             .sorted { $0.typeName < $1.typeName }
 

@@ -1,3 +1,14 @@
+//
+//  UserDefaultTests.swift
+//
+//  https://github.com/netzgut/integral-swift
+//
+//  Copyright (c) 2021 Ben Weidig
+//
+//  This work is licensed under the terms of the MIT license.
+//  For a copy, see LICENSE, or <https://opensource.org/licenses/MIT>
+//
+
 import XCTest
 @testable import IntegralSwift
 
@@ -18,11 +29,11 @@ final class UserDefaultTests: XCTestCase {
 
         static let defaultValue = "this is a default value"
 
-        @UserDefault(.testKey, defaultValue: TestData.defaultValue)
+        @UserDefault(.testKey, defaultValue: TestData.defaultValue, userDefaults: UserDefaults(suiteName: "t"))
         var value: String
     }
 
-    func testExample() {
+    func testUserDefault() {
 
         // ARRANGE / ACT
         let testData = TestData()
@@ -30,8 +41,4 @@ final class UserDefaultTests: XCTestCase {
         // ASSERT
         XCTAssertEqual(testData.value, TestData.defaultValue)
     }
-
-    static var allTests = [
-        ("testExample", testExample)
-    ]
 }
