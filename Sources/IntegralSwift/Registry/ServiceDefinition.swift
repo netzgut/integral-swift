@@ -126,6 +126,10 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
             fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be realized.")
         }
 
+        guard self.realizedService == nil else {
+            return
+        }
+
         let service = self.factory()
         self.realizedService = service
     }
