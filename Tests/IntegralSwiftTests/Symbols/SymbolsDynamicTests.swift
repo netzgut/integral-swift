@@ -22,7 +22,7 @@ final class SymbolsDynamicTests: XCTestCase {
         var dynamicValue: String
     }
 
-    func testConstantSymbol() {
+    func testDynamicSymbol() {
 
         // ARRANGE
         Symbols.dynamic(TestData.symbolKey) {

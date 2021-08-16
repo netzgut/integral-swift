@@ -187,4 +187,16 @@ public final class Symbols {
 
         return proxy
     }
+
+    public static func resolve<S>(_ key: SymbolKey,
+                                  _ type: S.Type = S.self) -> S {
+        resolve(key.rawValue, type)
+    }
+
+    public static func resolve<S>(_ key: String,
+                                  _ type: S.Type = S.self) -> S {
+        let proxyFn = Symbols.proxy(key, type)
+        let symbol = proxyFn()
+        return symbol
+    }
 }

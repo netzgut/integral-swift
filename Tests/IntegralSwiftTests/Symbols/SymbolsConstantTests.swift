@@ -53,4 +53,19 @@ final class SymbolsConstantTests: XCTestCase {
         XCTAssertTrue(resolved)
         XCTAssertEqual(testData.constantValue, constantValue)
     }
+
+    func testConstantResolve() {
+
+        // ARRANGE
+        let constantValue: Int = 42
+        Symbols.constant(TestData.symbolKey, Int.self) {
+            return constantValue
+        }
+
+        // ACT
+        let value: Int = Symbols.resolve(TestData.symbolKey)
+
+        // ASSERT
+        XCTAssertEqual(value, constantValue)
+    }
 }
