@@ -91,6 +91,8 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     internal var isRealized: Bool {
         self.realizedService != nil
     }
+    
+    internal var isRealizing: Bool = false
 
     internal init(type: S.Type = S.self,
                   factory: @escaping Factory<S>) {
@@ -108,7 +110,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
             return { service }
         }
 
-        guard self.realizationType == .lazy else {
+        guard self.realizationType == .lazy || self.isRealizing else {
             realizeService()
             return { self.realizedService! }
         }
@@ -130,7 +132,9 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
             return
         }
 
+        self.isRealizing = true
+
         let service = self.factory()
-        self.realizedService = service
+        self.realizedService = service        
     }
 }
