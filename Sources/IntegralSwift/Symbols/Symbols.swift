@@ -173,7 +173,7 @@ public final class Symbols {
         guard let definition = definitionAny as? SymbolDefinition<T> else {
             let baseDef = definitionAny as! SymbolBaseDefinition
             let actualTypeName = String(reflecting: type)
-            fatalError("🚨 ERROR: Symbol type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
+            fatalError("🚨 ERROR: Symbol '\(key)' type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
         }
 
         return definition.proxy()
