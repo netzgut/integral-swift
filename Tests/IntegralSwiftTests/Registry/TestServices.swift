@@ -43,7 +43,7 @@ class TestServiceImpl: InjectTestService {
     var unique: UUID = UUID()
 
     init() {
-        TestServiceImpl.isResolved = true
+        Self.isResolved = true
     }
 }
 
@@ -56,8 +56,8 @@ class LazyTestServiceImpl: LazyTestService {
 
     var unique: UUID = UUID()
 
-     init() {
-        LazyTestServiceImpl.isResolved = true
+    init() {
+        Self.isResolved = true
     }
 }
 
@@ -67,8 +67,8 @@ class LazyAfterRegisterTestServiceImpl: LazyAfterRegisterTestService {
 
     var unique: UUID = UUID()
 
-     init() {
-        LazyAfterRegisterTestServiceImpl.isResolved = true
+    init() {
+        Self.isResolved = true
     }
 }
 
@@ -81,8 +81,8 @@ class EagerTestServiceImpl: EagerTestService {
 
     var unique: UUID = UUID()
 
-     init() {
-        EagerTestServiceImpl.isResolved = true
+    init() {
+        Self.isResolved = true
     }
 }
 
@@ -93,6 +93,54 @@ class EagerAfterRegisterTestServiceImpl: EagerAfterRegisterTestService {
     var unique: UUID = UUID()
 
     init() {
-        EagerAfterRegisterTestServiceImpl.isResolved = true
+        Self.isResolved = true
+    }
+}
+
+protocol PostConstructService: SharedTestService, PostConstruct {
+
+    static var isPostConstructed: Bool { get set }
+}
+protocol PostConstructEagerService: PostConstructService { }
+
+class PostConstructServiceImpl: PostConstructService {
+
+    static var isResolved: Bool = false
+    static var isPostConstructed: Bool = false
+
+    var unique: UUID = UUID()
+
+    init() {
+        Self.isResolved = true
+    }
+
+    func postConstruct() {
+        Self.isPostConstructed = true
+    }
+
+    static func reset() {
+        Self.isResolved = false
+        Self.isPostConstructed = false
+    }
+}
+
+class PostConstructEagerServiceImpl: PostConstructEagerService {
+
+    static var isResolved: Bool = false
+    static var isPostConstructed: Bool = false
+
+    var unique: UUID = UUID()
+
+    init() {
+        Self.isResolved = true
+    }
+
+    func postConstruct() {
+        Self.isPostConstructed = true
+    }
+
+    static func reset() {
+        Self.isResolved = false
+        Self.isPostConstructed = false
     }
 }

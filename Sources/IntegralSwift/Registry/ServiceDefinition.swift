@@ -91,7 +91,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     internal var isRealized: Bool {
         self.realizedService != nil
     }
-    
+
     internal var isRealizing: Bool = false
 
     internal init(type: S.Type = S.self,
@@ -135,6 +135,11 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
         self.isRealizing = true
 
         let service = self.factory()
-        self.realizedService = service        
+
+        self.realizedService = service
+
+        if let postConstruct = service as? PostConstruct {
+            postConstruct.postConstruct()
+        }
     }
 }

@@ -97,3 +97,8 @@ extension Registry: RegistryModule {
 ## Resolve
 
 Instead of injecting a service, you can also call `static func resolve<S>(_ type: S.Type = S.self) -> S` to access a service.
+
+## PostConstruct
+
+A service can implement the protocol `PostConstruct`, so the `func postConstruct()` method is called after service realization.
+For example, you can use this feature to register observers that use `self` and can't be registered in `init`. 

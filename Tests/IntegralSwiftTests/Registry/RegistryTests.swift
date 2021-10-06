@@ -31,6 +31,8 @@ final class RegistryTests: XCTestCase {
         @Inject
         var eagerAfterRegisterService: EagerAfterRegisterTestService
 
+        @Inject
+        var postConstructService: PostConstructService
     }
 
     override func setUp() {
@@ -96,4 +98,28 @@ final class RegistryTests: XCTestCase {
         XCTAssertTrue(data.eagerService.test())
         XCTAssertTrue(EagerAfterRegisterTestServiceImpl.isResolved)
     }
+
+    func testPostContstructService() {
+
+        // PRECONDITION
+
+        XCTAssertFalse(PostConstructServiceImpl.isPostConstructed)
+
+        // ARRANGE / ACT
+
+        let data = TestData()
+        _ = data.postConstructService.test()
+
+        // ACT / ASSERT
+
+        XCTAssertTrue(PostConstructServiceImpl.isPostConstructed)
+    }
+
+    func testPostContstructEagerService() {
+
+        // PRECONDITION / ARRANGE / ACT
+
+        XCTAssertTrue(PostConstructEagerServiceImpl.isPostConstructed)
+    }
+
 }

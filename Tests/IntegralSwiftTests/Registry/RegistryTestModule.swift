@@ -29,13 +29,19 @@ extension Registry: RegistryModule {
         }.lazy()
 
         eager(EagerTestService.self) {
-            print("Realizing EagerTestService")
-            return EagerTestServiceImpl()
+            EagerTestServiceImpl()
         }
 
         register(EagerAfterRegisterTestService.self) {
-            print("Realizing EagerAfterRegisterTestService")
-            return EagerAfterRegisterTestServiceImpl()
+            EagerAfterRegisterTestServiceImpl()
+        }.eager()
+
+        register(PostConstructService.self) {
+            PostConstructServiceImpl()
+        }
+
+        register(PostConstructEagerService.self) {
+            PostConstructEagerServiceImpl()
         }.eager()
     }
 
@@ -45,6 +51,8 @@ extension Registry: RegistryModule {
         LazyAfterRegisterTestServiceImpl.reset()
         EagerTestServiceImpl.reset()
         EagerAfterRegisterTestServiceImpl.reset()
+        PostConstructServiceImpl.reset()
+        PostConstructEagerServiceImpl.reset()
     }
 
     public static func imports() -> [RegistryModule.Type] {
