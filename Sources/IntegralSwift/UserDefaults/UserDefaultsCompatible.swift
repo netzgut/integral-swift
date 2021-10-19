@@ -20,5 +20,5 @@ extension Double: UserDefaultsCompatible {}
 extension Float: UserDefaultsCompatible {}
 extension Bool: UserDefaultsCompatible {}
 extension Date: UserDefaultsCompatible {}
-extension Array: UserDefaultsCompatible {}
+extension Array: UserDefaultsCompatible where Element: UserDefaultsCompatible {}
 extension Dictionary: UserDefaultsCompatible where Key: UserDefaultsCompatible, Value: UserDefaultsCompatible {}
