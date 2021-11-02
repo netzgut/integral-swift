@@ -274,9 +274,9 @@ public final class Registry {
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
             let baseDef = definitionAny as! ServiceBaseDefinition
-            let actualTypeName = String(reflecting: type)
+            let proxyTypeName = String(reflecting: type)
             pthread_mutex_unlock(&Registry.resolveMutex)
-            fatalError("🚨 ERROR: Registration type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
+            fatalError("🚨 ERROR: Registration type mismatch: defined='\(baseDef.typeName)' - expected/injected='\(proxyTypeName)'")
         }
 
         pthread_mutex_unlock(&Registry.resolveMutex)
