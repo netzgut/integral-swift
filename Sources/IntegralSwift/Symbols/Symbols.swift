@@ -155,6 +155,7 @@ public final class Symbols {
 
     private func add(_ def: SymbolBaseDefinition) {
         if let alreadyRegistered = self.symbols[def.key] as? SymbolBaseDefinition {
+            // swiftlint:disable line_length
             print("⚠️ WARNING: Symbol '\(alreadyRegistered.description)' is already registered and will be overriden by '\(def.description)'.")
         }
 
@@ -171,8 +172,10 @@ public final class Symbols {
         }
 
         guard let definition = definitionAny as? SymbolDefinition<T> else {
+            // swiftlint:disable force_cast
             let baseDef = definitionAny as! SymbolBaseDefinition
             let actualTypeName = String(reflecting: type)
+            // swiftlint:disable line_length
             fatalError("🚨 ERROR: Symbol '\(key)' type mismatch: required='\(baseDef.typeName)' - actual='\(actualTypeName)'")
         }
 

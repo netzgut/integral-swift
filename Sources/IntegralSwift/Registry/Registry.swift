@@ -117,6 +117,7 @@ public final class Registry {
 
         if let alreadyRegistered = self.serviceDefinitions[identifier] as? ServiceBaseDefinition {
             let name = String(reflecting: type)
+            // swiftlint:disable line_length
             print("⚠️ WARNING: Service '\(alreadyRegistered.typeName)' is already registered and will be overriden by '\(name)'. Use 'Registry.override(...)' to silence this warning.")
         }
 
@@ -273,9 +274,11 @@ public final class Registry {
         }
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
+            // swiftlint:disable force_cast
             let baseDef = definitionAny as! ServiceBaseDefinition
             let proxyTypeName = String(reflecting: type)
             pthread_mutex_unlock(&Registry.resolveMutex)
+            // swiftlint:disable line_length
             fatalError("🚨 ERROR: Registration type mismatch: defined='\(baseDef.typeName)' - expected/injected='\(proxyTypeName)'")
         }
 
@@ -310,6 +313,7 @@ public final class Registry {
         }
 
         let definitions = Registry.instance.serviceDefinitions.values
+            // swiftlint:disable force_cast
             .map { $0 as! ServiceBaseDefinition}
             .sorted { $0.typeName < $1.typeName }
 
