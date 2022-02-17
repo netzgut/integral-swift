@@ -163,36 +163,46 @@ public final class Registry {
             return
         }
 
-        register(modules: [type(of: registrations)])
+        let registeredModules = register(modules: [type(of: registrations)])
 
         // We need to set it nil before actually registering the services,
-        // eager loading might crash due to not finished regist
+        // eager loading might crash due to not finished register
         Registry.registerServicesOnce = nil
 
         pthread_mutex_unlock(&Registry.registrationMutex)
+
+        registeredModules.forEach { $0.onStartup() }
 
         eagerLoadServices()
 
         if Registry.printServicesOnStartup {
             printServices()
         }
+
+        registeredModules.forEach { $0.afterStartup() }
     }
 
-    private static func register(modules: [RegistryModule.Type]) {
+    private static func register(modules: [RegistryModule.Type]) -> [RegistryModule.Type] {
+        var registeredModules: [RegistryModule.Type] = []
+
         for module in modules {
 
             let moduleName = String(reflecting: module)
-
-            register(modules: module.imports())
 
             if self.registeredModules.contains(moduleName) {
                 print("⚠️ WARNING: Module '\(moduleName)' is already imported.")
                 continue
             }
 
-            module.onStartup()
+            let importedModules = register(modules: module.imports())
+
+            registeredModules.append(module)
+            registeredModules.append(contentsOf: importedModules)
+
             self.registeredModules.insert(moduleName)
         }
+
+        return registeredModules
     }
 
     private static func shutdownRegistry() {

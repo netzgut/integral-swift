@@ -16,6 +16,7 @@ public protocol RegistryModule {
     static func imports() -> [RegistryModule.Type]
 
     static func onStartup()
+    static func afterStartup()
     static func onShutdown()
 
     @discardableResult
@@ -42,6 +43,10 @@ public extension RegistryModule {
     }
 
     static func onStartup() {
+        // NOOP
+    }
+
+    static func afterStartup() {
         // NOOP
     }
 

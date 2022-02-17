@@ -61,18 +61,43 @@ extension Registry: RegistryModule {
 }
 
 class SubModule1: RegistryModule {
+
+    static var onStartupRunCount = 0
+    static var afterStartupRunCount = 0
+
     public static func imports() -> [RegistryModule.Type] {
         [SubModule2.self]
     }
 
     public static func onStartup() {
-        print("==================Submodule1!")
+        self.onStartupRunCount += 1
+    }
+
+    public static func afterStartup() {
+        self.afterStartupRunCount += 1
+    }
+
+    public static func onShutdown() {
+        self.onStartupRunCount = 0
+        self.afterStartupRunCount = 0
     }
 }
 
 class SubModule2: RegistryModule {
 
+    static var onStartupRunCount = 0
+    static var afterStartupRunCount = 0
+
     public static func onStartup() {
-        print("==================Submodule2!")
+        self.onStartupRunCount += 1
+    }
+
+    public static func afterStartup() {
+        self.afterStartupRunCount += 1
+    }
+
+    public static func onShutdown() {
+        self.onStartupRunCount = 0
+        self.afterStartupRunCount = 0
     }
 }

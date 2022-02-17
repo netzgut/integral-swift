@@ -122,4 +122,14 @@ final class RegistryTests: XCTestCase {
         XCTAssertTrue(PostConstructEagerServiceImpl.isPostConstructed)
     }
 
+    func testOnStartupExactlyOnce() {
+
+        // PRECONDITION / ARRANGE / ACT
+
+        XCTAssertEqual(SubModule1.onStartupRunCount, 1)
+        XCTAssertEqual(SubModule1.afterStartupRunCount, 1)
+
+        XCTAssertEqual(SubModule2.onStartupRunCount, 1)
+        XCTAssertEqual(SubModule2.afterStartupRunCount, 1)
+    }
 }
