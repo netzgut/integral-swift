@@ -28,8 +28,8 @@ public final class Registry {
 
     private let registrationQueue = DispatchQueue(label: "integral-registry.registrationQueue",
                                                   attributes: .concurrent)
-    private var _serviceDefinitions = [Int: Any]()
-    private var serviceDefinitions: [Int: Any] {
+    private var _serviceDefinitions = [String: Any]()
+    private var serviceDefinitions: [String: Any] {
         get {
             self.registrationQueue.sync {
                 self._serviceDefinitions
@@ -41,8 +41,8 @@ public final class Registry {
             }
         }
     }
-    private var _overrideDefinitions = [Int: Any]()
-    private var overrideDefinitions: [Int: Any] {
+    private var _overrideDefinitions = [String: Any]()
+    private var overrideDefinitions: [String: Any] {
         get {
             self.registrationQueue.sync {
                 self._overrideDefinitions
@@ -54,7 +54,6 @@ public final class Registry {
             }
         }
     }
-
 
     private static var availableModuleIdentifiers = Set<String>()
 
@@ -127,18 +126,17 @@ public final class Registry {
     private func register<S>(_ type: S.Type = S.self,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
-        let identifier = buildIdentitier(type)
+        let fqsn = String(reflecting: type)
 
-        if let alreadyRegistered = self.serviceDefinitions[identifier] as? ServiceBaseDefinition {
-            let name = String(reflecting: type)
+        if let alreadyRegistered = self.serviceDefinitions[fqsn] as? ServiceBaseDefinition {
             // swiftlint:disable line_length
-            print("⚠️ WARNING: Service '\(alreadyRegistered.typeName)' is already registered and will be overriden by '\(name)'. Use 'Registry.override(...)' to silence this warning.")
+            print("⚠️ WARNING: Service '\(alreadyRegistered.typeName)' is already registered and will be overriden by '\(fqsn)'. Use 'Registry.override(...)' to silence this warning.")
         }
 
         let definition = ServiceDefinition(type: type,
                                            factory: factory)
 
-        self.serviceDefinitions[identifier] = definition
+        self.serviceDefinitions[fqsn] = definition
 
         return definition
     }
@@ -146,16 +144,17 @@ public final class Registry {
     private func override<S>(_ type: S.Type = S.self,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
-        let identifier = buildIdentitier(type)
+        let fqsn = String(reflecting: type)
 
-        if let overrideDefinition = self.overrideDefinitions[identifier] as? ServiceBaseDefinition {
-            print("⚠️ WARNING: Service registered for '\(overrideDefinition.typeName)' is already overriden.")
+        if self.overrideDefinitions[fqsn] != nil {
+            print("⚠️ WARNING: Service '\(fqsn)' is already overriden. Previous override will be ignored.")
         }
 
         let definition = ServiceDefinition(type: type,
+                                           isOverride: true,
                                            factory: factory)
 
-        self.overrideDefinitions[identifier] = definition
+        self.overrideDefinitions[fqsn] = definition
 
         return definition
     }
@@ -176,9 +175,9 @@ public final class Registry {
         // Make sure we haven't run registry startup yet
         guard Registry.isStarted == false,
               let registrations = (Registry.instance as Any) as? RegistryModule else {
-            pthread_mutex_unlock(&Registry.registryMutex)
-            return
-        }
+                  pthread_mutex_unlock(&Registry.registryMutex)
+                  return
+              }
 
         // We need to set it nil before actually registering the services,
         // eager loading might crash due to not finishing register first.
@@ -190,20 +189,18 @@ public final class Registry {
         allModules.forEach { $0.onStartup() }
 
         // Override services
-
         for (_, overrideTuple) in Registry.instance.overrideDefinitions.enumerated() {
             guard let overrideDefinition = overrideTuple.value as? ServiceBaseDefinition else {
                 continue
             }
 
-            if Registry.instance.serviceDefinitions[overrideTuple.key] == nil {
-                Registry.instance.serviceDefinitions[overrideTuple.key] = overrideDefinition
+            if Registry.instance.serviceDefinitions[overrideTuple.key] != nil {
                 print("ℹ️ INFO: Overriding Service '\(overrideDefinition.typeName)'.")
+            } else {
+                print("⚠️ WARNING: Overriden unregistered Service '\(overrideDefinition.typeName)'. Use Registry.register(...) instead.")
+            }
 
-            }
-            else {
-                print("⚠️ WARNING: Service '\(overrideDefinition.typeName)' isn't registered. Use Registry.register(...) instead.")
-            }
+            Registry.instance.serviceDefinitions[overrideTuple.key] = overrideDefinition
         }
 
         pthread_mutex_unlock(&Registry.registryMutex)
@@ -251,9 +248,9 @@ public final class Registry {
         guard Registry.isStarted,
               Registry.instance.serviceDefinitions.isEmpty == false,
               let registrations = (Registry.instance as Any) as? RegistryModule else {
-            pthread_mutex_unlock(&Registry.registryMutex)
-            return
-        }
+                  pthread_mutex_unlock(&Registry.registryMutex)
+                  return
+              }
 
         shutdown(modules: [type(of: registrations)])
 
@@ -264,7 +261,8 @@ public final class Registry {
             }
         }
 
-        Registry.instance.serviceDefinitions = [Int: Any]()
+        Registry.instance.serviceDefinitions = [String: Any]()
+        Registry.instance.overrideDefinitions = [String: Any]()
         Registry.availableModuleIdentifiers = Set<String>()
         Registry.startRegistryOnce = Registry.startRegistry
 
@@ -285,8 +283,8 @@ public final class Registry {
             guard let serviceOptions = rawDefinition as? ServiceOptions,
                   serviceOptions.realizationType == .eager,
                   let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
-                continue
-            }
+                      continue
+                  }
 
             serviceDefinition.realizeService()
         }
@@ -315,10 +313,10 @@ public final class Registry {
     private func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
         pthread_mutex_lock(&Registry.resolveMutex)
 
-        let identifier = buildIdentitier(type)
-        guard let definitionAny = self.serviceDefinitions[identifier]  else {
+        let fqsn = String(reflecting: type)
+        guard let definitionAny = self.serviceDefinitions[fqsn]  else {
             pthread_mutex_unlock(&Registry.resolveMutex)
-            fatalError("🚨 ERROR: No registration for type \(type) found")
+            fatalError("🚨 ERROR: No registration for tyoe '\(fqsn)' found")
         }
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
@@ -361,7 +359,7 @@ public final class Registry {
         }
 
         let definitions = Registry.instance.serviceDefinitions.values
-            // swiftlint:disable force_cast
+        // swiftlint:disable force_cast
             .map { $0 as! ServiceBaseDefinition}
             .sorted { $0.typeName < $1.typeName }
 

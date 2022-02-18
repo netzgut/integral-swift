@@ -47,6 +47,8 @@ class TestServiceImpl: InjectTestService {
     }
 }
 
+class TestService2Impl: TestServiceImpl { }
+
 protocol LazyTestService: SharedTestService { }
 protocol LazyAfterRegisterTestService: SharedTestService { }
 

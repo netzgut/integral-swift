@@ -56,7 +56,7 @@ extension Registry: RegistryModule {
     }
 
     public static func imports() -> [RegistryModule.Type] {
-        [SubModule1.self, SubModule2.self]
+        [SubModule1.self, SubModule2.self, OverrideModule.self]
     }
 }
 
@@ -99,5 +99,14 @@ class SubModule2: RegistryModule {
     public static func onShutdown() {
         self.onStartupRunCount = 0
         self.afterStartupRunCount = 0
+    }
+}
+
+class OverrideModule: RegistryModule {
+
+    public static func onStartup() {
+        override(InjectTestService.self) {
+            TestService2Impl()
+        }
     }
 }

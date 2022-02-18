@@ -55,6 +55,9 @@ internal protocol ServiceBaseDefinition {
     /// Service name, derived from type
     var typeName: String { get }
 
+    /// Used for debugging
+    var isOverride: Bool { get }
+
     /// Has the service been realized yet?
     var isRealized: Bool { get }
 
@@ -72,6 +75,9 @@ internal extension ServiceDefinition {
 
     var realizationStatus: String {
         let state =  self.isRealized ? "REALIZED" : "DEFINED "
+        if self.isOverride {
+            return "\(state) (\(self.realizationType)) [override]"
+        }
         return "\(state) (\(self.realizationType))"
     }
 }
@@ -81,6 +87,7 @@ internal extension ServiceDefinition {
 internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
     internal var typeName: String
+    internal var isOverride: Bool
 
     private var type: S.Type
     private var factory: Factory<S>
@@ -95,8 +102,10 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     internal var isRealizing: Bool = false
 
     internal init(type: S.Type = S.self,
+                  isOverride: Bool = false,
                   factory: @escaping Factory<S>) {
         self.typeName = String(reflecting: type)
+        self.isOverride = isOverride
         self.type = type
         self.factory = factory
     }

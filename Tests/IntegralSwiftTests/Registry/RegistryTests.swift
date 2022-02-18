@@ -117,19 +117,30 @@ final class RegistryTests: XCTestCase {
 
     func testPostContstructEagerService() {
 
-        // PRECONDITION / ARRANGE / ACT
+        // PRECONDITION / ARRANGE / ACT / ASSERT
 
         XCTAssertTrue(PostConstructEagerServiceImpl.isPostConstructed)
     }
 
     func testOnStartupExactlyOnce() {
 
-        // PRECONDITION / ARRANGE / ACT
+        // PRECONDITION / ARRANGE / ACT / ASSERT
 
         XCTAssertEqual(SubModule1.onStartupRunCount, 1)
         XCTAssertEqual(SubModule1.afterStartupRunCount, 1)
 
         XCTAssertEqual(SubModule2.onStartupRunCount, 1)
         XCTAssertEqual(SubModule2.afterStartupRunCount, 1)
+    }
+
+    func testOverride() {
+
+        // ARRANGE / ACT
+
+        let data = TestData()
+
+        // ASSERT
+
+        XCTAssertNotNil(data.service as? TestService2Impl)
     }
 }
