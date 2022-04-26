@@ -316,7 +316,7 @@ public final class Registry {
         let fqsn = String(reflecting: type)
         guard let definitionAny = self.serviceDefinitions[fqsn]  else {
             pthread_mutex_unlock(&Registry.resolveMutex)
-            fatalError("🚨 ERROR: No registration for tyoe '\(fqsn)' found")
+            fatalError("🚨 ERROR: No registration for type '\(fqsn)' found")
         }
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
@@ -335,7 +335,7 @@ public final class Registry {
 
     internal static func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
         guard Registry.isStarted else {
-            fatalError("🚨 ERROR: Registry MUST be started manually!")
+            fatalError("🚨 ERROR: Registry MUST be started first by calling performStartup()!")
         }
 
         return Registry.instance.proxy(type)
