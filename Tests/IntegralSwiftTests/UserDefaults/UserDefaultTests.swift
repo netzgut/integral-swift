@@ -29,7 +29,7 @@ final class UserDefaultTests: XCTestCase {
 
         static let defaultValue = "this is a default value"
 
-        @UserDefault(.testKey, defaultValue: TestData.defaultValue, userDefaults: UserDefaults(suiteName: "t"))
+        @UserDefault(.testKey, defaultValue: TestData.defaultValue, userDefaults: UserDefaults(suiteName: "t")!)
         var value: String
     }
 
