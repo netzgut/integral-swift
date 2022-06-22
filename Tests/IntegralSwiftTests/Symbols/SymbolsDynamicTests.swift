@@ -9,8 +9,8 @@
 //  For a copy, see LICENSE, or <https://opensource.org/licenses/MIT>
 //
 
-import XCTest
 @testable import IntegralSwift
+import XCTest
 
 final class SymbolsDynamicTests: XCTestCase {
 

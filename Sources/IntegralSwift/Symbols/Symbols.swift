@@ -1,6 +1,6 @@
 //
 //  Symbols.swift
-//  
+//
 //  https://github.com/netzgut/integral-swift
 //
 //  Copyright (c) 2020 Ben Weidig
@@ -167,7 +167,7 @@ public final class Symbols {
         pthread_mutex_lock(&self.resolveMutex)
         defer { pthread_mutex_unlock(&self.resolveMutex) }
 
-        guard let definitionAny = self.symbols[key]  else {
+        guard let definitionAny = self.symbols[key] else {
             fatalError("🚨 ERROR: Symbol '\(key)' not found")
         }
 

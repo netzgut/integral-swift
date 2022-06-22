@@ -11,14 +11,14 @@
 
 import Foundation
 
-public protocol UserDefaultsCompatible {}
+public protocol UserDefaultsCompatible { }
 
-extension Data: UserDefaultsCompatible {}
-extension String: UserDefaultsCompatible {}
-extension Int: UserDefaultsCompatible {}
-extension Double: UserDefaultsCompatible {}
-extension Float: UserDefaultsCompatible {}
-extension Bool: UserDefaultsCompatible {}
-extension Date: UserDefaultsCompatible {}
-extension Array: UserDefaultsCompatible where Element: UserDefaultsCompatible {}
-extension Dictionary: UserDefaultsCompatible where Key: UserDefaultsCompatible, Value: UserDefaultsCompatible {}
+extension Data: UserDefaultsCompatible { }
+extension String: UserDefaultsCompatible { }
+extension Int: UserDefaultsCompatible { }
+extension Double: UserDefaultsCompatible { }
+extension Float: UserDefaultsCompatible { }
+extension Bool: UserDefaultsCompatible { }
+extension Date: UserDefaultsCompatible { }
+extension Array: UserDefaultsCompatible where Element: UserDefaultsCompatible { }
+extension Dictionary: UserDefaultsCompatible where Key: UserDefaultsCompatible, Value: UserDefaultsCompatible { }

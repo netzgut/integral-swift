@@ -9,8 +9,8 @@
 //  For a copy, see LICENSE, or <https://opensource.org/licenses/MIT>
 //
 
-import XCTest
 @testable import IntegralSwift
+import XCTest
 
 final class SymbolsConstantTests: XCTestCase {
 
@@ -59,7 +59,7 @@ final class SymbolsConstantTests: XCTestCase {
         // ARRANGE
         let constantValue: Int = 42
         Symbols.constant(TestData.symbolKey, Int.self) {
-            return constantValue
+            constantValue
         }
 
         // ACT

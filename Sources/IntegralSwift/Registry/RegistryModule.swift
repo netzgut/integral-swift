@@ -28,7 +28,7 @@ public protocol RegistryModule {
                             factory: @escaping Factory<S>) -> ServiceOptions
 
     @discardableResult
-    static func lazy<S>(_ type: S.Type ,
+    static func lazy<S>(_ type: S.Type,
                         factory: @escaping Factory<S>) -> ServiceOptions
 
     @discardableResult
@@ -39,7 +39,7 @@ public protocol RegistryModule {
 public extension RegistryModule {
 
     static func imports() -> [RegistryModule.Type] {
-        return []
+        []
     }
 
     static func onStartup() {

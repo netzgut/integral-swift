@@ -103,6 +103,7 @@ protocol PostConstructService: SharedTestService, PostConstruct {
 
     static var isPostConstructed: Bool { get set }
 }
+
 protocol PostConstructEagerService: PostConstructService { }
 
 class PostConstructServiceImpl: PostConstructService {

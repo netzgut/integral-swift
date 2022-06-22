@@ -74,7 +74,7 @@ internal protocol ServiceBaseDefinition {
 internal extension ServiceDefinition {
 
     var realizationStatus: String {
-        let state =  self.isRealized ? "REALIZED" : "DEFINED "
+        let state = self.isRealized ? "REALIZED" : "DEFINED "
         if self.isOverride {
             return "\(state) (\(self.realizationType)) [override]"
         }
