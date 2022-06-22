@@ -41,6 +41,7 @@ public final class Registry {
             }
         }
     }
+
     private var _overrideDefinitions = [String: Any]()
     private var overrideDefinitions: [String: Any] {
         get {
@@ -194,9 +195,7 @@ public final class Registry {
                 continue
             }
 
-            if Registry.instance.serviceDefinitions[overrideTuple.key] != nil {
-                print("ℹ️ INFO: Overriding Service '\(overrideDefinition.typeName)'.")
-            } else {
+            if Registry.instance.serviceDefinitions[overrideTuple.key] == nil {
                 print("⚠️ WARNING: Overriden unregistered Service '\(overrideDefinition.typeName)'. Use Registry.register(...) instead.")
             }
 
@@ -314,7 +313,7 @@ public final class Registry {
         pthread_mutex_lock(&Registry.resolveMutex)
 
         let fqsn = String(reflecting: type)
-        guard let definitionAny = self.serviceDefinitions[fqsn]  else {
+        guard let definitionAny = self.serviceDefinitions[fqsn] else {
             pthread_mutex_unlock(&Registry.resolveMutex)
             fatalError("🚨 ERROR: No registration for type '\(fqsn)' found")
         }
@@ -360,10 +359,10 @@ public final class Registry {
 
         let definitions = Registry.instance.serviceDefinitions.values
         // swiftlint:disable force_cast
-            .map { $0 as! ServiceBaseDefinition}
+            .map { $0 as! ServiceBaseDefinition }
             .sorted { $0.typeName < $1.typeName }
 
-        let maxLength = definitions.map { $0.typeName.count}.max() ?? 0
+        let maxLength = definitions.map(\.typeName.count).max() ?? 0
 
         for definition in definitions {
             let serviceName = definition.typeName.padding(toLength: maxLength, withPad: " ", startingAt: 0)
