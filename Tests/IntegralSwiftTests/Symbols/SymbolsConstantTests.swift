@@ -14,6 +14,10 @@ import XCTest
 
 final class SymbolsConstantTests: XCTestCase {
 
+    override func tearDown() {
+        Symbols.reset()
+    }
+
     struct TestData {
 
         static let symbolKey = SymbolKey("constant-key")

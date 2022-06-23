@@ -14,6 +14,10 @@ import XCTest
 
 final class SymbolsDynamicTests: XCTestCase {
 
+    override func tearDown() {
+        Symbols.reset()
+    }
+
     struct TestData {
 
         static let symbolKey = SymbolKey("dynamic")

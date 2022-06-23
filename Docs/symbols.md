@@ -21,6 +21,10 @@ There are three methods available:
 * `Symbols.lazy`: The symbol is evaluated on first use.
 * `Symbols.dynamic`: The symbol factory is evaluated on every access.
 
+All three have the argument `isDefault: Bool = false` which marks the Symbol as overridable.
+Non-`default` Symbols can't be overriden and will throw a `fatalError`.
+Also, registering two `default` Symbols under the same key is forbidden. 
+
 ## SymbolKeys
 
 Strings can be used to identify a `Symbol`.

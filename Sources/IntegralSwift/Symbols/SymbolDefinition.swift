@@ -14,6 +14,7 @@ import Foundation
 internal protocol SymbolBaseDefinition: CustomStringConvertible {
     var key: String { get }
     var typeName: String { get }
+    var isDefault: Bool { get }
     var symbolType: String { get }
 }
 
@@ -22,14 +23,17 @@ internal class SymbolDefinition<T>: SymbolBaseDefinition {
     internal var key: String
     internal var typeName: String
     internal var type: T.Type
+    internal var isDefault: Bool
     internal var factory: Factory<T>
 
     internal init(key: String,
                   type: T.Type,
+                  isDefault: Bool,
                   factory: @escaping Factory<T>) {
         self.key = key
         self.typeName = String(reflecting: type)
         self.type = type
+        self.isDefault = isDefault
         self.factory = factory
     }
 
@@ -42,7 +46,12 @@ internal class SymbolDefinition<T>: SymbolBaseDefinition {
     }
 
     var description: String {
-        "\(self.key) -> \(self.typeName) (\(self.symbolType))"
+        let description = "\(self.key) -> \(self.typeName) (\(self.symbolType))"
+        guard self.isDefault else {
+            return description
+        }
+
+        return "\(description) [default]"
     }
 }
 
@@ -56,11 +65,13 @@ internal class ConstantSymbol<T>: SymbolDefinition<T> {
 
     internal init(key: String,
                   type: T.Type,
+                  isDefault: Bool,
                   value: T) {
         self.value = value
 
         super.init(key: key,
                    type: type,
+                   isDefault: isDefault,
                    factory: { value })
     }
 
