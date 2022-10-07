@@ -10,8 +10,9 @@ let package = Package(name: "IntegralSwift",
                       ],
                       dependencies: [],
                       targets: [
+                        
                           .target(name: "IntegralSwift",
                                   dependencies: []),
                           .testTarget(name: "IntegralSwiftTests",
-                                      dependencies: ["IntegralSwift"])
+                                      dependencies: ["IntegralSwift"]),
                       ])

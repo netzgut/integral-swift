@@ -12,7 +12,10 @@
 
 import Foundation
 
-// overrides Swift global `fatalError`
+/*
+ REMOVED FOR NOW BECAUSE IT CAN'T BE DISABLED IN NON-TEST ENVIRONMENT
+
+ // overrides Swift global `fatalError`
 func fatalError(_ message: @autoclosure () -> String = String(),
                 file: StaticString = #file,
                 line: UInt = #line) -> Never {
@@ -21,6 +24,7 @@ func fatalError(_ message: @autoclosure () -> String = String(),
                                      file,
                                      line)
 }
+
 
 /// Utility functions that can replace and restore the `fatalError` global function.
 enum FatalErrorUtil {
@@ -41,3 +45,4 @@ enum FatalErrorUtil {
         fatalErrorClosure = defaultFatalErrorClosure
     }
 }
+*/
