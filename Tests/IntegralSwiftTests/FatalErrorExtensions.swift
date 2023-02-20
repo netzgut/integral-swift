@@ -13,7 +13,6 @@
 // See: https://stackoverflow.com/a/68496755
 import XCTest
 
-
 extension XCTestCase {
 
     func expectFatalError(expectedMessage: String? = nil,

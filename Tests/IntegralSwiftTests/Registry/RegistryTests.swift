@@ -15,6 +15,21 @@ import XCTest
 final class RegistryTests: XCTestCase {
 
     class TestData {
+        @Inject var service: InjectTestService
+
+        @Inject var lazyService: LazyTestService
+        @Inject var lazyAfterRegisterService: LazyAfterRegisterTestService
+
+        @Inject var eagerService: EagerTestService
+        @Inject var eagerAfterRegisterService: EagerAfterRegisterTestService
+
+        @Inject var postConstructService: PostConstructService
+
+        @Inject var customServiceIdService: CustomServiceIdServiceImpl
+        @Inject("custom-service-id") var customServiceIdService2: CustomServiceIdServiceImpl
+    }
+
+    class TestDataLazy {
 
         @Inject
         var service: InjectTestService

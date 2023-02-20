@@ -25,7 +25,6 @@ func fatalError(_ message: @autoclosure () -> String = String(),
                                      line)
 }
 
-
 /// Utility functions that can replace and restore the `fatalError` global function.
 enum FatalErrorUtil {
     typealias FatalErrorClosureType = (String, StaticString, UInt) -> Never
