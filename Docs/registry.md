@@ -102,3 +102,39 @@ Instead of injecting a service, you can also call `static func resolve<S>(_ type
 
 A service can implement the protocol `PostConstruct`, so the `func postConstruct()` method is called after service realization.
 For example, you can use this feature to register observers that use `self` and can't be registered in `init`. 
+
+
+## Custom Service IDs
+
+You can register the same service type with different ids:
+
+
+```swift
+import IntegralSwift
+
+class MyModule: RegistryModule {
+
+    static func onStartup() {
+
+        register {
+            MyService()
+        }
+
+        register(MyService.self, serviceId: "custom-my-service") {
+            MyCustomService()
+        }
+    }
+}
+```
+
+This allows you to have multiple Services with the same type:
+
+```swift
+
+class UseMutlipleServices {
+
+    @Inject var originalService: MyService
+    @Inject("custom-my-service") var customService: MyService
+}
+```
+

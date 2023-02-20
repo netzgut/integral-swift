@@ -147,3 +147,14 @@ class PostConstructEagerServiceImpl: PostConstructEagerService {
         Self.isPostConstructed = false
     }
 }
+
+class CustomServiceIdServiceImpl: SharedTestService {
+
+    static var isResolved: Bool = false
+
+    var unique: UUID = UUID()
+
+    init() {
+        Self.isResolved = true
+    }
+}

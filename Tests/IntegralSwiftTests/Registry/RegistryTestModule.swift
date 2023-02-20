@@ -43,6 +43,14 @@ extension Registry: RegistryModule {
         register(PostConstructEagerService.self) {
             PostConstructEagerServiceImpl()
         }.eager()
+
+        register(CustomServiceIdServiceImpl.self) {
+            CustomServiceIdServiceImpl()
+        }
+
+        register(CustomServiceIdServiceImpl.self, "custom-service-id") {
+            CustomServiceIdServiceImpl()
+        }
     }
 
     public static func onShutdown() {

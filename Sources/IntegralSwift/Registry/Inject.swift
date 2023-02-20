@@ -21,8 +21,8 @@ public struct Inject<S> {
     private var proxy: Proxy<S>
     private var service: S?
 
-    public init() {
-        self.proxy = Registry.proxy(S.self)
+    public init(_ serviceId: String? = nil) {
+        self.proxy = Registry.proxy(S.self, serviceId: serviceId)
     }
 
     public var wrappedValue: S {

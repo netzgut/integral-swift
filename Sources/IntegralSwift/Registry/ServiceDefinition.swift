@@ -52,8 +52,14 @@ public class ServiceOptions {
 
 internal protocol ServiceBaseDefinition {
 
-    /// Service name, derived from type
+    /// Type name, derived from type
     var typeName: String { get }
+
+    /// Service Id, usually derived from the type name
+    var serviceId: String { get }
+
+    /// Composite of type and if necessary service id
+    var humanReadableIdentifier: String { get }
 
     /// Used for debugging
     var isOverride: Bool { get }
@@ -73,6 +79,14 @@ internal protocol ServiceBaseDefinition {
 
 internal extension ServiceDefinition {
 
+    var humanReadableIdentifier: String {
+        guard self.serviceId != self.typeName else {
+            return self.serviceId
+        }
+
+        return "\(self.typeName) '\(self.serviceId)'"
+    }
+
     var realizationStatus: String {
         let state = self.isRealized ? "REALIZED" : "DEFINED "
         if self.isOverride {
@@ -87,6 +101,7 @@ internal extension ServiceDefinition {
 internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
     internal var typeName: String
+    internal var serviceId: String
     internal var isOverride: Bool
 
     private var type: S.Type
@@ -102,9 +117,11 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     internal var isRealizing: Bool = false
 
     internal init(type: S.Type = S.self,
+                  serviceId: String,
                   isOverride: Bool = false,
                   factory: @escaping Factory<S>) {
         self.typeName = String(reflecting: type)
+        self.serviceId = serviceId
         self.isOverride = isOverride
         self.type = type
         self.factory = factory

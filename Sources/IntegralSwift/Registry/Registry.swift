@@ -78,84 +78,108 @@ public final class Registry {
     ///
     /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
     /// - parameter factory: Closure that returns the actual service
+    /// - parameter serviceId: Override the serviceId used for the registry to allow multiple services
+    ///                        with the same Type.
     ///
     /// - returns: ServiceOptions for further configuration.
     @discardableResult
     public static func register<S>(_ type: S.Type = S.self,
+                                   _ serviceId: String? = nil,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type, factory: factory)
+        self.instance.register(type,
+                               serviceId: serviceId,
+                               factory: factory)
     }
 
     /// Override a service. Warns if service is niot registered. Will be overridden/registered anyway.
     ///
     /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
     /// - parameter factory: Closure that returns the actual service
+    /// - parameter serviceId: Override the serviceId used for the registry to allow overriding a
+    ///                        service with a custom id.
     ///
     /// - returns: ServiceOptions for further configuration.
     @discardableResult
     public static func override<S>(_ type: S.Type = S.self,
+                                   _ serviceId: String? = nil,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.override(type, factory: factory)
+        self.instance.override(type,
+                               serviceId: serviceId,
+                               factory: factory)
     }
 
     /// Registers a service as lazy. Warns if service is already registered. Will be registered anyway.
     ///
     /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
     /// - parameter factory: Closure that returns the actual service
+    /// - parameter serviceId: Override the serviceId used for the registry to allow multiple services
+    ///                        with the same Type.
     ///
     /// - returns: ServiceOptions for further configuration.
     @discardableResult
     public static func lazy<S>(_ type: S.Type = S.self,
+                               _ serviceId: String? = nil,
                                factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type, factory: factory).lazy()
+        self.instance.register(type,
+                               serviceId: serviceId,
+                               factory: factory).lazy()
     }
 
     /// Registers a service as eager loaded. Warns if service is already registered. Will be registered anyway.
     ///
     /// - parameter type: Optional service type, may be inferred. Should be used for specialization.
     /// - parameter factory: Closure that returns the actual service
+    /// - parameter serviceId: Override the serviceId used for the registry to allow multiple services
+    ///                        with the same Type.
     ///
     /// - returns: ServiceOptions for further configuration.
     @discardableResult
     public static func eager<S>(_ type: S.Type = S.self,
+                                _ serviceId: String? = nil,
                                 factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type, factory: factory).eager()
+        self.instance.register(type,
+                               serviceId: serviceId,
+                               factory: factory).eager()
     }
 
     // MARK: - REGISTRATION METHODS (PRIVATE)
 
     private func register<S>(_ type: S.Type = S.self,
+                             serviceId: String?,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
-        let fqsn = String(reflecting: type)
+        let actualServiceId = serviceId ?? String(reflecting: type)
 
-        if let alreadyRegistered = self.serviceDefinitions[fqsn] as? ServiceBaseDefinition {
+        if let alreadyRegistered = self.serviceDefinitions[actualServiceId] as? ServiceBaseDefinition {
             // swiftlint:disable line_length
-            print("⚠️ WARNING: Service '\(alreadyRegistered.typeName)' is already registered and will be overriden by '\(fqsn)'. Use 'Registry.override(...)' to silence this warning.")
+            print("⚠️ WARNING: Service '\(alreadyRegistered.serviceId)' \(alreadyRegistered.typeName) is already registered and will be overriden by '\(actualServiceId)'. Use 'Registry.override(...)' to silence this warning.")
         }
 
         let definition = ServiceDefinition(type: type,
+                                           serviceId: actualServiceId,
                                            factory: factory)
 
-        self.serviceDefinitions[fqsn] = definition
+        self.serviceDefinitions[actualServiceId] = definition
 
         return definition
     }
 
     private func override<S>(_ type: S.Type = S.self,
+                             serviceId: String?,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
-        let fqsn = String(reflecting: type)
+        let actualServiceId = serviceId ?? String(reflecting: type)
 
-        if self.overrideDefinitions[fqsn] != nil {
-            print("⚠️ WARNING: Service '\(fqsn)' is already overriden. Previous override will be ignored.")
+        if self.overrideDefinitions[actualServiceId] != nil {
+            print("⚠️ WARNING: Service '\(actualServiceId)' is already overriden. Previous override will be ignored.")
         }
 
         let definition = ServiceDefinition(type: type,
+                                           serviceId: actualServiceId,
                                            isOverride: true,
                                            factory: factory)
 
-        self.overrideDefinitions[fqsn] = definition
+        self.overrideDefinitions[actualServiceId] = definition
 
         return definition
     }
@@ -309,13 +333,14 @@ public final class Registry {
 
     // MARK: - PROXY / RESOLVE
 
-    private func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
+    private func proxy<S>(_ type: S.Type = S.self,
+                          serviceId: String?) -> Proxy<S> {
         pthread_mutex_lock(&Registry.resolveMutex)
 
-        let fqsn = String(reflecting: type)
-        guard let definitionAny = self.serviceDefinitions[fqsn] else {
+        let actualServiceId = serviceId ?? String(reflecting: type)
+        guard let definitionAny = self.serviceDefinitions[actualServiceId] else {
             pthread_mutex_unlock(&Registry.resolveMutex)
-            fatalError("🚨 ERROR: No registration for type '\(fqsn)' found")
+            fatalError("🚨 ERROR: No registration for type '\(actualServiceId)' found")
         }
 
         guard let definition = definitionAny as? ServiceDefinition<S> else {
@@ -324,7 +349,7 @@ public final class Registry {
             let proxyTypeName = String(reflecting: type)
             pthread_mutex_unlock(&Registry.resolveMutex)
             // swiftlint:disable line_length
-            fatalError("🚨 ERROR: Registration type mismatch: defined='\(baseDef.typeName)' - expected/injected='\(proxyTypeName)'")
+            fatalError("🚨 ERROR: Registration type mismatch: defined='\(baseDef.serviceId)' (\(baseDef.typeName)) - expected/injected='\(actualServiceId)' (\(proxyTypeName))")
         }
 
         pthread_mutex_unlock(&Registry.resolveMutex)
@@ -332,17 +357,19 @@ public final class Registry {
         return definition.proxy()
     }
 
-    internal static func proxy<S>(_ type: S.Type = S.self) -> Proxy<S> {
+    internal static func proxy<S>(_ type: S.Type,
+                                  serviceId: String?) -> Proxy<S> {
         guard Registry.isStarted else {
             fatalError("🚨 ERROR: Registry MUST be started first by calling performStartup()!")
         }
 
-        return Registry.instance.proxy(type)
+        return Registry.instance.proxy(type, serviceId: serviceId)
     }
 
     /// Immediatly resolves a service, regardles of its realization type.
-    public static func resolve<S>(_ type: S.Type = S.self) -> S {
-        let proxyFn = Registry.proxy(type)
+    public static func resolve<S>(_ type: S.Type = S.self,
+                                  _ serviceId: String? = nil) -> S {
+        let proxyFn = Registry.proxy(type, serviceId: serviceId)
         let service = proxyFn()
         return service
     }
@@ -362,10 +389,12 @@ public final class Registry {
             .map { $0 as! ServiceBaseDefinition }
             .sorted { $0.typeName < $1.typeName }
 
-        let maxLength = definitions.map(\.typeName.count).max() ?? 0
+        let maxLength = definitions.map(\.humanReadableIdentifier.count).max() ?? 0
 
         for definition in definitions {
-            let serviceName = definition.typeName.padding(toLength: maxLength, withPad: " ", startingAt: 0)
+            let serviceName = definition.humanReadableIdentifier.padding(toLength: maxLength,
+                                                                         withPad: " ",
+                                                                         startingAt: 0)
             let status = definition.realizationStatus
 
             print("    \(serviceName) : \(status)")

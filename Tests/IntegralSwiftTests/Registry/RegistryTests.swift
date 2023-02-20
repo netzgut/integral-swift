@@ -143,4 +143,15 @@ final class RegistryTests: XCTestCase {
 
         XCTAssertNotNil(data.service as? TestService2Impl)
     }
+
+    func testCustomServiceId() {
+
+        // ARRANGE / ACT
+
+        let data = TestData()
+
+        // ASSERT
+
+        XCTAssertNotEqual(data.customServiceIdService.unique, data.customServiceIdService2.unique)
+    }
 }
