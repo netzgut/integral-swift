@@ -400,10 +400,4 @@ public final class Registry {
             print("    \(serviceName) : \(status)")
         }
     }
-
-    // MARK: - HELPER (PRIVATE)
-
-    private func buildIdentitier<S>(_ type: S.Type) -> Int {
-        ObjectIdentifier(type).hashValue
-    }
 }
