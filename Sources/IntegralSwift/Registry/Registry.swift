@@ -86,7 +86,7 @@ public final class Registry {
     public static func register<S>(_ type: S.Type = S.self,
                                    _ serviceId: String? = nil,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type,
+        self.instance.register(type: type,
                                serviceId: serviceId,
                                factory: factory)
     }
@@ -103,7 +103,7 @@ public final class Registry {
     public static func override<S>(_ type: S.Type = S.self,
                                    _ serviceId: String? = nil,
                                    factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.override(type,
+        self.instance.override(type: type,
                                serviceId: serviceId,
                                factory: factory)
     }
@@ -120,7 +120,7 @@ public final class Registry {
     public static func lazy<S>(_ type: S.Type = S.self,
                                _ serviceId: String? = nil,
                                factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type,
+        self.instance.register(type: type,
                                serviceId: serviceId,
                                factory: factory).lazy()
     }
@@ -137,14 +137,14 @@ public final class Registry {
     public static func eager<S>(_ type: S.Type = S.self,
                                 _ serviceId: String? = nil,
                                 factory: @escaping Factory<S>) -> ServiceOptions {
-        self.instance.register(type,
+        self.instance.register(type: type,
                                serviceId: serviceId,
                                factory: factory).eager()
     }
 
     // MARK: - REGISTRATION METHODS (PRIVATE)
 
-    private func register<S>(_ type: S.Type = S.self,
+    private func register<S>(type: S.Type = S.self,
                              serviceId: String?,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
@@ -164,7 +164,7 @@ public final class Registry {
         return definition
     }
 
-    private func override<S>(_ type: S.Type = S.self,
+    private func override<S>(type: S.Type = S.self,
                              serviceId: String?,
                              factory: @escaping Factory<S>) -> ServiceDefinition<S> {
 
@@ -333,7 +333,7 @@ public final class Registry {
 
     // MARK: - PROXY / RESOLVE
 
-    private func proxy<S>(_ type: S.Type = S.self,
+    private func proxy<S>(type: S.Type = S.self,
                           serviceId: String?) -> Proxy<S> {
         pthread_mutex_lock(&Registry.resolveMutex)
 
@@ -357,19 +357,19 @@ public final class Registry {
         return definition.proxy()
     }
 
-    internal static func proxy<S>(_ type: S.Type,
+    internal static func proxy<S>(type: S.Type,
                                   serviceId: String?) -> Proxy<S> {
         guard Registry.isStarted else {
             fatalError("🚨 ERROR: Registry MUST be started first by calling performStartup()!")
         }
 
-        return Registry.instance.proxy(type, serviceId: serviceId)
+        return Registry.instance.proxy(type: type, serviceId: serviceId)
     }
 
     /// Immediatly resolves a service, regardles of its realization type.
     public static func resolve<S>(_ type: S.Type = S.self,
                                   _ serviceId: String? = nil) -> S {
-        let proxyFn = Registry.proxy(type, serviceId: serviceId)
+        let proxyFn = Registry.proxy(type: type, serviceId: serviceId)
         let service = proxyFn()
         return service
     }
