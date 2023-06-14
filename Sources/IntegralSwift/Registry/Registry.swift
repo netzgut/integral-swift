@@ -198,15 +198,21 @@ public final class Registry {
         pthread_mutex_lock(&Registry.registryMutex)
 
         // Make sure we haven't run registry startup yet
-        guard Registry.isStarted == false,
-              let registrations = (Registry.instance as Any) as? RegistryModule else {
-                  pthread_mutex_unlock(&Registry.registryMutex)
-                  return
-              }
+        guard Registry.isStarted == false else {
+            pthread_mutex_unlock(&Registry.registryMutex)
+            return
+        }
 
         // We need to set it nil before actually registering the services,
         // eager loading might crash due to not finishing register first.
         Registry.startRegistryOnce = nil
+
+        // Check for the initial RegistryModule
+        guard let registrations = (Registry.instance as Any) as? RegistryModule else {
+            print("⚠️ WARNING: No 'extension Registry: RegistryModule' found.")
+            pthread_mutex_unlock(&Registry.registryMutex)
+            return
+        }
 
         let allModules = analyze(modules: [type(of: registrations)])
 
@@ -271,9 +277,9 @@ public final class Registry {
         guard Registry.isStarted,
               Registry.instance.serviceDefinitions.isEmpty == false,
               let registrations = (Registry.instance as Any) as? RegistryModule else {
-                  pthread_mutex_unlock(&Registry.registryMutex)
-                  return
-              }
+            pthread_mutex_unlock(&Registry.registryMutex)
+            return
+        }
 
         shutdown(modules: [type(of: registrations)])
 
@@ -306,8 +312,8 @@ public final class Registry {
             guard let serviceOptions = rawDefinition as? ServiceOptions,
                   serviceOptions.realizationType == .eager,
                   let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
-                      continue
-                  }
+                continue
+            }
 
             serviceDefinition.realizeService()
         }
