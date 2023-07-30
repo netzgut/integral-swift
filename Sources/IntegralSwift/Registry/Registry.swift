@@ -16,55 +16,27 @@ public final class Registry {
 
     // MARK: - SETTINGS
 
-    /// Prints all registered services after registry has started
+    /// Prints all registered services after registry has started.
     public static var printServicesOnStartup: Bool = true
 
-    /// Prints all registered services after registry has started
+    /// Service realization type if not specified otherwise.
+    /// Default: .injection
     public static var defaultServiceRealizationType: ServiceRealizationType = .injection
 
     // MARK: - PRIVATE PROPERTIES
 
     private static var instance = Registry()
 
-    private let registrationQueue = DispatchQueue(label: "integral-registry.registrationQueue",
-                                                  attributes: .concurrent)
-    private var _serviceDefinitions = [String: Any]()
-    private var serviceDefinitions: [String: Any] {
-        get {
-            self.registrationQueue.sync {
-                self._serviceDefinitions
-            }
-        }
-        set {
-            self.registrationQueue.async(flags: .barrier) {
-                self._serviceDefinitions = newValue
-            }
-        }
-    }
+    private var serviceDefinitions = [String: Any]()
+    private var overrideDefinitions = [String: Any]()
 
-    private var _overrideDefinitions = [String: Any]()
-    private var overrideDefinitions: [String: Any] {
-        get {
-            self.registrationQueue.sync {
-                self._overrideDefinitions
-            }
-        }
-        set {
-            self.registrationQueue.async(flags: .barrier) {
-                self._overrideDefinitions = newValue
-            }
-        }
-    }
+    private var availableModuleIdentifiers = Set<String>()
 
-    private static var availableModuleIdentifiers = Set<String>()
+    // MARK: - LOCKS
 
-    // MARK: - MUTEX
+    private var registryLock = NSLock()
 
-    private static var registryMutex: pthread_mutex_t = {
-        var mutex = pthread_mutex_t()
-        pthread_mutex_init(&mutex, nil)
-        return mutex
-    }()
+    private var definitionsLock = NSLock()
 
     private static var resolveMutex: pthread_mutex_t = {
         var mutex = pthread_mutex_t()
@@ -150,6 +122,9 @@ public final class Registry {
 
         let actualServiceId = serviceId ?? String(reflecting: type)
 
+        self.definitionsLock.lock()
+        defer { self.definitionsLock.unlock() }
+
         if let alreadyRegistered = self.serviceDefinitions[actualServiceId] as? ServiceBaseDefinition {
             // swiftlint:disable line_length
             print("⚠️ WARNING: Service '\(alreadyRegistered.serviceId)' \(alreadyRegistered.typeName) is already registered and will be overriden by '\(actualServiceId)'. Use 'Registry.override(...)' to silence this warning.")
@@ -170,6 +145,9 @@ public final class Registry {
 
         let actualServiceId = serviceId ?? String(reflecting: type)
 
+        self.definitionsLock.lock()
+        defer { self.definitionsLock.unlock() }
+
         if self.overrideDefinitions[actualServiceId] != nil {
             print("⚠️ WARNING: Service '\(actualServiceId)' is already overriden. Previous override will be ignored.")
         }
@@ -188,18 +166,18 @@ public final class Registry {
 
     private typealias RegistryStartupFn = () -> Void
 
-    private static var startRegistryOnce: RegistryStartupFn? = Registry.startRegistry
+    private static var startRegistryOnce: RegistryStartupFn? = Registry.instance.startRegistry
 
     private static var isStarted: Bool {
         Registry.startRegistryOnce == nil
     }
 
-    private static func startRegistry() {
-        pthread_mutex_lock(&Registry.registryMutex)
+    private func startRegistry() {
+        self.registryLock.lock()
+        defer { self.registryLock.unlock() }
 
         // Make sure we haven't run registry startup yet
         guard Registry.isStarted == false else {
-            pthread_mutex_unlock(&Registry.registryMutex)
             return
         }
 
@@ -210,7 +188,6 @@ public final class Registry {
         // Check for the initial RegistryModule
         guard let registrations = (Registry.instance as Any) as? RegistryModule else {
             print("⚠️ WARNING: No 'extension Registry: RegistryModule' found.")
-            pthread_mutex_unlock(&Registry.registryMutex)
             return
         }
 
@@ -232,8 +209,6 @@ public final class Registry {
             Registry.instance.serviceDefinitions[overrideTuple.key] = overrideDefinition
         }
 
-        pthread_mutex_unlock(&Registry.registryMutex)
-
         eagerLoadServices()
 
         if Registry.printServicesOnStartup {
@@ -243,7 +218,7 @@ public final class Registry {
         allModules.forEach { $0.afterStartup() }
     }
 
-    private static func analyze(modules: [RegistryModule.Type]) -> [RegistryModule.Type] {
+    private func analyze(modules: [RegistryModule.Type]) -> [RegistryModule.Type] {
         guard modules.isEmpty == false else {
             return []
         }
@@ -269,15 +244,28 @@ public final class Registry {
         return analyzedModules
     }
 
-    private static func shutdownRegistry() {
-        pthread_mutex_lock(&Registry.registryMutex)
+    private func eagerLoadServices() {
+        // Eager Load services
+        for rawDefinition in Registry.instance.serviceDefinitions.values {
+            guard let serviceOptions = rawDefinition as? ServiceOptions,
+                  serviceOptions.realizationType == .eager,
+                  let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
+                continue
+            }
+
+            serviceDefinition.realizeService()
+        }
+    }
+
+    private func shutdownRegistry() {
+        self.registryLock.lock()
+        defer { self.registryLock.unlock() }
 
         // Make sure we haven't run registry startup yet
 
         guard Registry.isStarted,
               Registry.instance.serviceDefinitions.isEmpty == false,
-              let registrations = (Registry.instance as Any) as? RegistryModule else {
-            pthread_mutex_unlock(&Registry.registryMutex)
+              let registrations = self as? RegistryModule else {
             return
         }
 
@@ -290,32 +278,17 @@ public final class Registry {
             }
         }
 
-        Registry.instance.serviceDefinitions = [String: Any]()
-        Registry.instance.overrideDefinitions = [String: Any]()
-        Registry.availableModuleIdentifiers = Set<String>()
-        Registry.startRegistryOnce = Registry.startRegistry
-
-        pthread_mutex_unlock(&Registry.registryMutex)
+        self.serviceDefinitions = [String: Any]()
+        self.overrideDefinitions = [String: Any]()
+        self.availableModuleIdentifiers = Set<String>()
+        Registry.startRegistryOnce = Registry.instance.startRegistry
     }
 
-    private static func shutdown(modules: [RegistryModule.Type]) {
+    private func shutdown(modules: [RegistryModule.Type]) {
         for module in modules {
             let moduleImports = module.imports()
             shutdown(modules: moduleImports)
             module.onShutdown()
-        }
-    }
-
-    private static func eagerLoadServices() {
-        // Eager Load services
-        for rawDefinition in Registry.instance.serviceDefinitions.values {
-            guard let serviceOptions = rawDefinition as? ServiceOptions,
-                  serviceOptions.realizationType == .eager,
-                  let serviceDefinition = rawDefinition as? ServiceBaseDefinition else {
-                continue
-            }
-
-            serviceDefinition.realizeService()
         }
     }
 
@@ -330,18 +303,19 @@ public final class Registry {
     }
 
     public static func performShutdown() {
-        guard Registry.isStarted else {
-            fatalError("🚨 ERROR: Registry wasn't started yet!")
-        }
-
-        shutdownRegistry()
+        Registry.instance.shutdownRegistry()
     }
 
     // MARK: - PROXY / RESOLVE
 
     private func proxy<S>(type: S.Type = S.self,
                           serviceId: String?) -> Proxy<S> {
+
         pthread_mutex_lock(&Registry.resolveMutex)
+
+        guard Registry.isStarted else {
+            fatalError("🚨 ERROR: Registry MUST be started first by calling performStartup()!")
+        }
 
         let actualServiceId = serviceId ?? String(reflecting: type)
         guard let definitionAny = self.serviceDefinitions[actualServiceId] else {
@@ -365,11 +339,7 @@ public final class Registry {
 
     internal static func proxy<S>(type: S.Type,
                                   serviceId: String?) -> Proxy<S> {
-        guard Registry.isStarted else {
-            fatalError("🚨 ERROR: Registry MUST be started first by calling performStartup()!")
-        }
-
-        return Registry.instance.proxy(type: type, serviceId: serviceId)
+        Registry.instance.proxy(type: type, serviceId: serviceId)
     }
 
     /// Immediatly resolves a service, regardles of its realization type.
@@ -383,7 +353,7 @@ public final class Registry {
     // MARK: - HELPER (PUBLIC)
 
     /// Prints all registered services.
-    public static func printServices() {
+    public func printServices() {
         print("📖 REGISTERED SERVICES:")
         guard Registry.instance.serviceDefinitions.isEmpty == false else {
             print("   No services registered")
