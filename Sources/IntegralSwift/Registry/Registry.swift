@@ -127,7 +127,7 @@ public final class Registry {
 
         if let alreadyRegistered = self.serviceDefinitions[actualServiceId] as? ServiceBaseDefinition {
             // swiftlint:disable line_length
-            print("⚠️ WARNING: Service '\(alreadyRegistered.serviceId)' \(alreadyRegistered.typeName) is already registered and will be overriden by '\(actualServiceId)'. Use 'Registry.override(...)' to silence this warning.")
+            fatalError("🚨 ERROR: Service \(alreadyRegistered.humanReadableIdentifier) is already registered. Use 'Registry.override(...)' instead.")
         }
 
         let definition = ServiceDefinition(type: type,
@@ -147,6 +147,10 @@ public final class Registry {
 
         self.definitionsLock.lock()
         defer { self.definitionsLock.unlock() }
+
+        guard self.serviceDefinitions[actualServiceId] != nil else {
+            fatalError("🚨 ERROR: No Service '\(actualServiceId)' found to override.")
+        }
 
         if self.overrideDefinitions[actualServiceId] != nil {
             print("⚠️ WARNING: Service '\(actualServiceId)' is already overriden. Previous override will be ignored.")
@@ -186,9 +190,8 @@ public final class Registry {
         Registry.startRegistryOnce = nil
 
         // Check for the initial RegistryModule
-        guard let registrations = (Registry.instance as Any) as? RegistryModule else {
-            print("⚠️ WARNING: No 'extension Registry: RegistryModule' found.")
-            return
+        guard let registrations = self as? RegistryModule else {
+            fatalError("🚨 ERROR: No 'extension Registry: RegistryModule' found. Please setup your Registry correctly.")
         }
 
         let allModules = analyze(modules: [type(of: registrations)])
@@ -200,10 +203,6 @@ public final class Registry {
         for (_, overrideTuple) in Registry.instance.overrideDefinitions.enumerated() {
             guard let overrideDefinition = overrideTuple.value as? ServiceBaseDefinition else {
                 continue
-            }
-
-            if Registry.instance.serviceDefinitions[overrideTuple.key] == nil {
-                print("⚠️ WARNING: Overriden unregistered Service '\(overrideDefinition.typeName)'. Use Registry.register(...) instead.")
             }
 
             Registry.instance.serviceDefinitions[overrideTuple.key] = overrideDefinition
