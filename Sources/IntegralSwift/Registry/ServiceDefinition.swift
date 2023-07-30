@@ -108,6 +108,8 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     private var factory: Factory<S>
     private var realizedService: S?
 
+    private let realizationLock = NSLock()
+
     internal var isActive: Bool = true
 
     internal var isRealized: Bool {
@@ -150,6 +152,9 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     internal func realizeService() {
+        self.realizationLock.lock()
+        defer { self.realizationLock.unlock() }
+
         guard self.isActive else {
             fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be realized.")
         }
