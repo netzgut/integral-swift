@@ -114,7 +114,7 @@ final class RegistryTests: XCTestCase {
         XCTAssertTrue(EagerAfterRegisterTestServiceImpl.isResolved)
     }
 
-    func testPostContstructService() {
+    func testPostConstructService() {
 
         // PRECONDITION
 
@@ -130,11 +130,25 @@ final class RegistryTests: XCTestCase {
         XCTAssertTrue(PostConstructServiceImpl.isPostConstructed)
     }
 
-    func testPostContstructEagerService() {
+    func testPostConstructEagerService() {
 
         // PRECONDITION / ARRANGE / ACT / ASSERT
 
         XCTAssertTrue(PostConstructEagerServiceImpl.isPostConstructed)
+    }
+
+    func testPostConstructUniquenessService() {
+
+        // ARRANGE / ACT
+
+        let data1 = TestData()
+        let data2 = TestData()
+        let data3 = TestData()
+
+        // ASSERT
+
+        XCTAssertEqual(data1.postConstructService.unique, data2.postConstructService.unique)
+        XCTAssertEqual(data2.postConstructService.unique, data3.postConstructService.unique)
     }
 
     func testOnStartupExactlyOnce() {

@@ -1,5 +1,5 @@
 //
-//  TestService.swift
+//  TestServices.swift
 //
 //  https://github.com/netzgut/integral-swift
 //
@@ -104,14 +104,13 @@ protocol PostConstructService: SharedTestService, PostConstruct {
     static var isPostConstructed: Bool { get set }
 }
 
-protocol PostConstructEagerService: PostConstructService { }
-
 class PostConstructServiceImpl: PostConstructService {
 
     static var isResolved: Bool = false
     static var isPostConstructed: Bool = false
 
     var unique: UUID = UUID()
+    var postConstructUnique: UUID!
 
     init() {
         Self.isResolved = true
@@ -119,13 +118,16 @@ class PostConstructServiceImpl: PostConstructService {
 
     func postConstruct() {
         Self.isPostConstructed = true
+        self.postConstructUnique = UUID()
     }
 
     static func reset() {
-        Self.isResolved = false
-        Self.isPostConstructed = false
+        self.isResolved = false
+        self.isPostConstructed = false
     }
 }
+
+protocol PostConstructEagerService: PostConstructService { }
 
 class PostConstructEagerServiceImpl: PostConstructEagerService {
 
@@ -143,8 +145,8 @@ class PostConstructEagerServiceImpl: PostConstructEagerService {
     }
 
     static func reset() {
-        Self.isResolved = false
-        Self.isPostConstructed = false
+        self.isResolved = false
+        self.isPostConstructed = false
     }
 }
 
