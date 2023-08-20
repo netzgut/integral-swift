@@ -11,6 +11,10 @@
 
 import Foundation
 
+/// PostConstruct marker interface.
+///
+/// A service conforming to PostConstruct will execute the `postConstruct` function
+/// after the service is constructed.
 public protocol PostConstruct {
 
     func postConstruct()

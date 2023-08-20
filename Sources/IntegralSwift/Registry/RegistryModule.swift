@@ -11,6 +11,10 @@
 
 import Foundation
 
+/// RegistryModule accumulates the definition of a module to be used/loaded by the Registry.
+///
+/// You can register/override services here, and run actions with different lifecycle methods.
+/// Also, you can load other RegistryModules.
 public protocol RegistryModule {
 
     static func imports() -> [RegistryModule.Type]
