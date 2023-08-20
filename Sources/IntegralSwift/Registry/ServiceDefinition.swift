@@ -26,7 +26,7 @@ public enum ServiceRealizationType {
 /// Options of a service definition. Only public way to interact with a registration.
 public class ServiceOptions {
 
-    internal var realizationType: ServiceRealizationType = Registry.defaultServiceRealizationType
+    var realizationType: ServiceRealizationType = Registry.defaultServiceRealizationType
 
     /// Marks a service as "lazy", so it's realized at first access, not at injection.
     @discardableResult
@@ -50,7 +50,7 @@ public class ServiceOptions {
     }
 }
 
-internal protocol ServiceBaseDefinition {
+protocol ServiceBaseDefinition {
 
     /// Type name, derived from type
     var typeName: String { get }
@@ -77,7 +77,7 @@ internal protocol ServiceBaseDefinition {
     var isActive: Bool { get set }
 }
 
-internal extension ServiceDefinition {
+extension ServiceDefinition {
 
     var humanReadableIdentifier: String {
         guard self.serviceId != self.typeName else {
@@ -98,11 +98,11 @@ internal extension ServiceDefinition {
 
 /// Definition of a Service.
 /// Knows everything to realize/build a service by providing a proxy
-internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
+class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
-    internal var typeName: String
-    internal var serviceId: String
-    internal var isOverride: Bool
+    var typeName: String
+    var serviceId: String
+    var isOverride: Bool
 
     private var type: S.Type
     private var factory: Factory<S>
@@ -110,18 +110,18 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
 
     private let realizationLock = NSLock()
 
-    internal var isActive: Bool = true
+    var isActive: Bool = true
 
-    internal var isRealized: Bool {
+    var isRealized: Bool {
         self.realizedService != nil
     }
 
-    internal var isRealizing: Bool = false
+    var isRealizing: Bool = false
 
-    internal init(type: S.Type = S.self,
-                  serviceId: String,
-                  isOverride: Bool = false,
-                  factory: @escaping Factory<S>) {
+    init(type: S.Type = S.self,
+         serviceId: String,
+         isOverride: Bool = false,
+         factory: @escaping Factory<S>) {
         self.typeName = String(reflecting: type)
         self.serviceId = serviceId
         self.isOverride = isOverride
@@ -129,12 +129,13 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
         self.factory = factory
     }
 
-    internal func proxy() -> Proxy<S> {
+    func proxy() -> Proxy<S> {
         guard self.isActive else {
             fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be created.")
         }
 
-        if let service = self.realizedService {
+        if self.realizationType != .injection,
+           let service = self.realizedService {
             return { service }
         }
 
@@ -151,7 +152,7 @@ internal class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
         return proxy
     }
 
-    internal func realizeService() {
+    func realizeService() {
         self.realizationLock.lock()
         defer { self.realizationLock.unlock() }
 

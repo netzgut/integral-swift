@@ -11,4 +11,4 @@
 
 public typealias Factory<T> = () -> T
 
-internal typealias Proxy<T> = () -> T
+typealias Proxy<T> = () -> T

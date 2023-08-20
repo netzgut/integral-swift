@@ -336,8 +336,8 @@ public final class Registry {
         return definition.proxy()
     }
 
-    internal static func proxy<S>(type: S.Type,
-                                  serviceId: String?) -> Proxy<S> {
+    static func proxy<S>(type: S.Type,
+                         serviceId: String?) -> Proxy<S> {
         Registry.instance.proxy(type: type, serviceId: serviceId)
     }
 

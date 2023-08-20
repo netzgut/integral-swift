@@ -33,7 +33,7 @@ public struct SymbolKey: RawRepresentable, Equatable, Hashable, Comparable {
 
 public final class Symbols {
 
-    internal static let instance = Symbols()
+    static let instance = Symbols()
 
     private let symbolsQueue = DispatchQueue(label: "integral-symbols.queue",
                                              attributes: .concurrent)
@@ -214,8 +214,8 @@ public final class Symbols {
         return definition.proxy()
     }
 
-    internal static func proxy<T>(_ key: String,
-                                  _ type: T.Type = T.self) -> Proxy<T> {
+    static func proxy<T>(_ key: String,
+                         _ type: T.Type = T.self) -> Proxy<T> {
         guard let proxy = Symbols.instance.proxy(key, type) else {
             fatalError("Symbol '\(key)' not found")
         }
