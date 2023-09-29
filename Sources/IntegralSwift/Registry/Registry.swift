@@ -148,10 +148,6 @@ public final class Registry {
         self.definitionsLock.lock()
         defer { self.definitionsLock.unlock() }
 
-        guard self.serviceDefinitions[actualServiceId] != nil else {
-            fatalError("🚨 ERROR: No Service '\(actualServiceId)' found to override.")
-        }
-
         if self.overrideDefinitions[actualServiceId] != nil {
             print("⚠️ WARNING: Service '\(actualServiceId)' is already overriden. Previous override will be ignored.")
         }
@@ -205,6 +201,10 @@ public final class Registry {
                 continue
             }
 
+            guard self.serviceDefinitions[overrideDefinition.serviceId] != nil else {
+                fatalError("🚨 ERROR: No Service '\(overrideDefinition.serviceId)' found to override.")
+            }
+
             Registry.instance.serviceDefinitions[overrideTuple.key] = overrideDefinition
         }
 
@@ -234,6 +234,7 @@ public final class Registry {
             }
 
             analyzedModules.append(module)
+
             self.availableModuleIdentifiers.insert(moduleName)
 
             let importedModules = analyze(modules: module.imports())
