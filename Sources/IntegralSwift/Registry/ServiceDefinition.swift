@@ -134,8 +134,7 @@ class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
             fatalError("🚨 ERROR: Registry was shutdown, Proxy can't be created.")
         }
 
-        if self.realizationType != .injection,
-           let service = self.realizedService {
+        if let service = self.realizedService {
             return { service }
         }
 
