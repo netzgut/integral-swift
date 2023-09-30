@@ -30,7 +30,7 @@ extension SharedTestService {
     }
 
     static func reset() {
-        Self.isResolved = false
+        isResolved = false
     }
 }
 
@@ -158,5 +158,20 @@ class CustomServiceIdServiceImpl: SharedTestService {
 
     init() {
         Self.isResolved = true
+    }
+}
+
+class Circular1 {
+    @Inject
+    var circular2: Circular2
+}
+
+class Circular2: PostConstruct {
+
+    @Inject
+    var circular1: Circular1
+
+    func postConstruct() {
+        _ = self.circular1.circular2
     }
 }

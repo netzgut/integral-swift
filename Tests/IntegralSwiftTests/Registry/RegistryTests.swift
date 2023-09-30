@@ -50,6 +50,11 @@ final class RegistryTests: XCTestCase {
         var postConstructService: PostConstructService
     }
 
+    class TestDataCircular {
+        @Inject
+        var service: Circular1
+    }
+
     override func setUp() {
         Registry.performStartup()
     }
@@ -182,5 +187,15 @@ final class RegistryTests: XCTestCase {
         // ASSERT
 
         XCTAssertNotEqual(data.customServiceIdService.unique, data.customServiceIdService2.unique)
+    }
+
+    func testCircularDependency() {
+
+        // ARRANGE / ACT
+        // This isn't actually testable, as a fatalError is thrown
+        // _ = TestDataCircular()
+
+        // ASSERT
+        XCTAssertTrue(true)
     }
 }

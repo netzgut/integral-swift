@@ -51,6 +51,14 @@ extension Registry: RegistryModule {
         register(CustomServiceIdServiceImpl.self, "custom-service-id") {
             CustomServiceIdServiceImpl()
         }
+
+        register {
+            Circular1()
+        }
+
+        register {
+            Circular2()
+        }
     }
 
     public static func onShutdown() {

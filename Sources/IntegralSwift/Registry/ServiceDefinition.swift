@@ -152,7 +152,10 @@ class ServiceDefinition<S>: ServiceOptions, ServiceBaseDefinition {
     }
 
     func realizeService() {
-        self.realizationLock.lock()
+        guard self.realizationLock.try() else {
+            fatalError("🚨 ERROR: Circular dependency detected. Realizing '\(self.humanReadableIdentifier)' more than once.")
+        }
+
         defer { self.realizationLock.unlock() }
 
         guard self.isActive else {
